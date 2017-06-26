@@ -59,6 +59,17 @@ async def _internal_cap_handler(conn: 'IrcProtocol', message: 'Message'):
     elif message.parameters[1] == 'LIST':
         if conn.logger:
             conn.logger.info("Current Capabilities: %s", caplist)
+    elif message.parameters[1] == 'NEW':
+        if conn.logger:
+            conn.logger.info("New capabilities advertised: %s", caplist)
+        for cap in caplist:
+            handlers = filter(None, conn.cap_handlers[cap.name])
+            await asyncio.gather(*[func(conn) for func in handlers])
+    elif message.parameters[1] == 'DEL':
+        if conn.logger:
+            conn.logger.info("Capabilities removed: %s", caplist)
+        for cap in caplist:
+            conn.server.caps[cap.name] = False
 
 
 async def _do_sasl(conn: 'IrcProtocol'):
