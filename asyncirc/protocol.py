@@ -34,8 +34,11 @@ async def _internal_ping(conn: 'IrcProtocol', message: 'Message'):
 
 
 async def _internal_cap_handler(conn: 'IrcProtocol', message: 'Message'):
-    if message.parameters[1] == 'LS':
+    caplist = []
+    if len(message.parameters) > 2:
         caplist = CapList.parse(message.parameters[-1])
+
+    if message.parameters[1] == 'LS':
         for cap in caplist:
             if cap.name in conn.cap_handlers:
                 conn.server.caps[cap.name] = None
@@ -45,7 +48,6 @@ async def _internal_cap_handler(conn: 'IrcProtocol', message: 'Message'):
                 conn.send("CAP REQ :{}".format(cap))
 
     elif message.parameters[1] in ('ACK', 'NAK'):
-        caplist = CapList.parse(message.parameters[-1])
         enabled = message.parameters[1] == 'ACK'
         for cap in caplist:
             conn.server.caps[cap.name] = enabled
@@ -54,6 +56,9 @@ async def _internal_cap_handler(conn: 'IrcProtocol', message: 'Message'):
                 await asyncio.gather(*[func(conn) for func in handlers])
         if all(val is not None for val in conn.server.caps.values()):
             conn.send("CAP END")
+    elif message.parameters[1] == 'LIST':
+        if conn.logger:
+            conn.logger.info("Current Capabilities: %s", caplist)
 
 
 async def _do_sasl(conn: 'IrcProtocol'):
