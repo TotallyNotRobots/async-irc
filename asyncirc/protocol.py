@@ -63,8 +63,12 @@ async def _internal_cap_handler(conn: 'IrcProtocol', message: 'Message'):
         if conn.logger:
             conn.logger.info("New capabilities advertised: %s", caplist)
         for cap in caplist:
-            handlers = filter(None, conn.cap_handlers[cap.name])
-            await asyncio.gather(*[func(conn) for func in handlers])
+            if cap.name in conn.cap_handlers:
+                conn.server.caps[cap.name] = None
+
+        if message.parameters[2] != '*':
+            for cap in conn.server.caps:
+                conn.send("CAP REQ :{}".format(cap))
     elif message.parameters[1] == 'DEL':
         if conn.logger:
             conn.logger.info("Capabilities removed: %s", caplist)
