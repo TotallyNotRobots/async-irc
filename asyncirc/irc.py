@@ -63,6 +63,11 @@ class Cap(Parseable):
             return CAP_VALUE_SEP.join((self.name, self.value))
         return self.name
 
+    def __eq__(self, other):
+        if isinstance(other, Cap):
+            return self.name == other.name
+        return False
+
     @staticmethod
     def parse(text: str) -> 'Cap':
         """Parse a CAP entity from a string"""
