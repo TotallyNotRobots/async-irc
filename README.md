@@ -2,7 +2,7 @@
 An implementation of asyncio.Protocol for IRC
 
 ### Example
-```(py)
+```python
 import asyncio
 
 from asyncirc.protocol import IrcProtocol
