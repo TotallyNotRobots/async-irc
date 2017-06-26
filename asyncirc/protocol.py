@@ -41,7 +41,7 @@ async def _internal_cap_handler(conn: 'IrcProtocol', message: 'Message'):
     if message.parameters[1] == 'LS':
         for cap in caplist:
             if cap.name in conn.cap_handlers:
-                conn.server.caps[cap.name] = None
+                conn.server.caps[cap.name] = (cap, None)
 
         if message.parameters[2] != '*':
             for cap in conn.server.caps:
@@ -50,11 +50,12 @@ async def _internal_cap_handler(conn: 'IrcProtocol', message: 'Message'):
     elif message.parameters[1] in ('ACK', 'NAK'):
         enabled = message.parameters[1] == 'ACK'
         for cap in caplist:
-            conn.server.caps[cap.name] = enabled
+            current = conn.server.caps[cap.name][0]
+            conn.server.caps[cap.name] = (current, enabled)
             if enabled:
                 handlers = filter(None, conn.cap_handlers[cap.name])
                 await asyncio.gather(*[func(conn) for func in handlers])
-        if all(val is not None for val in conn.server.caps.values()):
+        if all(val[1] is not None for val in conn.server.caps.values()):
             conn.send("CAP END")
     elif message.parameters[1] == 'LIST':
         if conn.logger:
@@ -64,7 +65,7 @@ async def _internal_cap_handler(conn: 'IrcProtocol', message: 'Message'):
             conn.logger.info("New capabilities advertised: %s", caplist)
         for cap in caplist:
             if cap.name in conn.cap_handlers:
-                conn.server.caps[cap.name] = None
+                conn.server.caps[cap.name] = (cap, None)
 
         if message.parameters[2] != '*':
             for cap in conn.server.caps:
@@ -73,7 +74,8 @@ async def _internal_cap_handler(conn: 'IrcProtocol', message: 'Message'):
         if conn.logger:
             conn.logger.info("Capabilities removed: %s", caplist)
         for cap in caplist:
-            conn.server.caps[cap.name] = False
+            current = conn.server.caps[cap.name][0]
+            conn.server.caps[cap.name] = (current, False)
 
 
 async def _do_sasl(conn: 'IrcProtocol'):

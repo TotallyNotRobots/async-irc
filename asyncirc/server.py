@@ -3,7 +3,7 @@
 Server objects used for different stages in the connect process
 to store contextual data
 """
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple
 
 from asyncirc.irc import Cap
 
@@ -32,4 +32,4 @@ class ConnectedServer(Server):
     def __init__(self, server):
         super().__init__(server.host, server.port, server.is_ssl, server.password)
         self.isupport_tokens: Dict[str, str] = {}
-        self.caps: Dict[Cap, Optional[bool]] = {}
+        self.caps: Dict[str, Tuple[Cap, Optional[bool]]] = {}
