@@ -17,6 +17,7 @@ from asyncirc.server import ConnectedServer
 
 if TYPE_CHECKING:
     from logging import Logger
+    from asyncirc.irc import Cap
     from asyncirc.server import Server
     from asyncio import AbstractEventLoop, Transport
 
@@ -78,8 +79,15 @@ async def _internal_cap_handler(conn: 'IrcProtocol', message: 'Message'):
             conn.server.caps[cap.name] = (current, False)
 
 
-async def _do_sasl(conn: 'IrcProtocol'):
+async def _do_sasl(conn: 'IrcProtocol', cap):
     if not conn.sasl_mech or conn.sasl_mech is SASLMechanism.NONE:
+        return
+    supported_mechs = cap.value
+    if supported_mechs is not None:
+        supported_mechs = supported_mechs.split(',')
+    if supported_mechs and conn.sasl_mech.name not in supported_mechs:
+        if conn.logger:
+            conn.logger.warning("Server doesn't support configured SASL mechanism '%s'", conn.sasl_mech)
         return
     conn.send("AUTHENTICATE {}".format(conn.sasl_mech.name))
     auth_msg = await conn.wait_for("AUTHENTICATE", timeout=5)
@@ -187,7 +195,7 @@ class IrcProtocol(Protocol):
         """Unregister a hook"""
         del self.handlers[hook_id]
 
-    def register_cap(self, cap: str, handler: Optional[Callable[['IrcProtocol'], Coroutine]] = None) -> None:
+    def register_cap(self, cap: str, handler: Optional[Callable[['IrcProtocol', 'Cap'], Coroutine]] = None) -> None:
         """Register a CAP handler
 
         If the handler is None, the CAP will be requested from the server, but no handler will be called,
