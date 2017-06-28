@@ -47,6 +47,8 @@ async def _internal_cap_handler(conn: 'IrcProtocol', message: 'Message'):
         if message.parameters[2] != '*':
             for cap in conn.server.caps:
                 conn.send("CAP REQ :{}".format(cap))
+            if not conn.server.caps:
+                conn.send("CAP END")  # We haven't request any CAPs, send a CAP END to end negotiation
 
     elif message.parameters[1] in ('ACK', 'NAK'):
         enabled = message.parameters[1] == 'ACK'
