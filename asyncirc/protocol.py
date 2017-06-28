@@ -17,6 +17,7 @@ from asyncirc.server import ConnectedServer
 
 if TYPE_CHECKING:
     from logging import Logger
+    from asyncirc.irc import Cap
     from asyncirc.server import Server
     from asyncio import AbstractEventLoop, Transport
 
@@ -34,30 +35,59 @@ async def _internal_ping(conn: 'IrcProtocol', message: 'Message'):
 
 
 async def _internal_cap_handler(conn: 'IrcProtocol', message: 'Message'):
-    if message.parameters[1] == 'LS':
+    caplist = []
+    if len(message.parameters) > 2:
         caplist = CapList.parse(message.parameters[-1])
+
+    if message.parameters[1] == 'LS':
         for cap in caplist:
             if cap.name in conn.cap_handlers:
-                conn.server.caps[cap.name] = None
+                conn.server.caps[cap.name] = (cap, None)
 
         if message.parameters[2] != '*':
             for cap in conn.server.caps:
                 conn.send("CAP REQ :{}".format(cap))
 
     elif message.parameters[1] in ('ACK', 'NAK'):
-        caplist = CapList.parse(message.parameters[-1])
         enabled = message.parameters[1] == 'ACK'
         for cap in caplist:
-            conn.server.caps[cap.name] = enabled
+            current = conn.server.caps[cap.name][0]
+            conn.server.caps[cap.name] = (current, enabled)
             if enabled:
                 handlers = filter(None, conn.cap_handlers[cap.name])
                 await asyncio.gather(*[func(conn) for func in handlers])
-        if all(val is not None for val in conn.server.caps.values()):
+        if all(val[1] is not None for val in conn.server.caps.values()):
             conn.send("CAP END")
+    elif message.parameters[1] == 'LIST':
+        if conn.logger:
+            conn.logger.info("Current Capabilities: %s", caplist)
+    elif message.parameters[1] == 'NEW':
+        if conn.logger:
+            conn.logger.info("New capabilities advertised: %s", caplist)
+        for cap in caplist:
+            if cap.name in conn.cap_handlers:
+                conn.server.caps[cap.name] = (cap, None)
+
+        if message.parameters[2] != '*':
+            for cap in conn.server.caps:
+                conn.send("CAP REQ :{}".format(cap))
+    elif message.parameters[1] == 'DEL':
+        if conn.logger:
+            conn.logger.info("Capabilities removed: %s", caplist)
+        for cap in caplist:
+            current = conn.server.caps[cap.name][0]
+            conn.server.caps[cap.name] = (current, False)
 
 
-async def _do_sasl(conn: 'IrcProtocol'):
+async def _do_sasl(conn: 'IrcProtocol', cap):
     if not conn.sasl_mech or conn.sasl_mech is SASLMechanism.NONE:
+        return
+    supported_mechs = cap.value
+    if supported_mechs is not None:
+        supported_mechs = supported_mechs.split(',')
+    if supported_mechs and conn.sasl_mech.name not in supported_mechs:
+        if conn.logger:
+            conn.logger.warning("Server doesn't support configured SASL mechanism '%s'", conn.sasl_mech)
         return
     conn.send("AUTHENTICATE {}".format(conn.sasl_mech.name))
     auth_msg = await conn.wait_for("AUTHENTICATE", timeout=5)
@@ -175,7 +205,7 @@ class IrcProtocol(Protocol):
         """Unregister a hook"""
         del self.handlers[hook_id]
 
-    def register_cap(self, cap: str, handler: Optional[Callable[['IrcProtocol'], Coroutine]] = None) -> None:
+    def register_cap(self, cap: str, handler: Optional[Callable[['IrcProtocol', 'Cap'], Coroutine]] = None) -> None:
         """Register a CAP handler
 
         If the handler is None, the CAP will be requested from the server, but no handler will be called,
