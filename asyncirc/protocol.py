@@ -69,6 +69,16 @@ async def _do_sasl(conn: 'IrcProtocol'):
         conn.send("AUTHENTICATE {}".format(auth_line))
 
 
+async def _isupport_handler(conn: 'IrcProtocol', message: 'Message'):
+    tokens = message.parameters[1:-1]  # Remove the nick and trailing ':are supported by this server' message
+    for token in tokens:
+        if token[0] == '-' and token.upper() in conn.server.isupport_tokens:
+            del conn.server.isupport_tokens[token.upper()]
+        else:
+            name, _, value = token.partition('=')
+            conn.server.isupport_tokens[name.upper()] = value or None
+
+
 class IrcProtocol(Protocol):
     """Async IRC Interface"""
 
