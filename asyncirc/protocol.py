@@ -196,6 +196,9 @@ class IrcProtocol(Protocol):
             await asyncio.wait_for(fut, 30)
         except asyncio.TimeoutError:
             return False
+        except ConnectionError as e:
+            self.logger.error("Error occurred while connecting to %s (%s)", self.server, e)
+            return False
         return True
 
     def register(self, cmd: str, handler: Callable[['IrcProtocol', 'Message'], Coroutine]) -> int:
