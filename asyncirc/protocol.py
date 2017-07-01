@@ -14,6 +14,7 @@ from typing import Sequence, Optional, Tuple, Callable, Dict, Coroutine, AnyStr,
 
 from asyncirc.irc import Message, CapList
 from asyncirc.server import ConnectedServer
+from asyncirc.util.backoff import AsyncDelayer
 
 if TYPE_CHECKING:
     from logging import Logger
@@ -169,9 +170,11 @@ class IrcProtocol(Protocol):
 
     async def connect(self) -> None:
         """Attempt to connect to the server, cycling through the server list until successful"""
+        delayer = AsyncDelayer(2)
         for server in cycle(self.servers):
-            if await self._connect(server):
-                break
+            async with delayer:
+                if await self._connect(server):
+                    break
 
     async def _connect(self, server: 'Server') -> bool:
         self._connected_future = self.loop.create_future()
