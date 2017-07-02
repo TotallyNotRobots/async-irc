@@ -58,7 +58,7 @@ async def _internal_cap_handler(conn: 'IrcProtocol', message: 'Message'):
             conn.server.caps[cap.name] = (current, enabled)
             if enabled:
                 handlers = filter(None, conn.cap_handlers[cap.name])
-                await asyncio.gather(*[func(conn) for func in handlers])
+                await asyncio.gather(*[func(conn, cap) for func in handlers])
         if all(val[1] is not None for val in conn.server.caps.values()):
             conn.send("CAP END")
     elif message.parameters[1] == 'LIST':
