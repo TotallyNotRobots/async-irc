@@ -100,6 +100,9 @@ async def _do_sasl(conn: 'IrcProtocol', cap):
             auth_line = '\0'.join((conn.nick, *conn.sasl_auth))
             auth_line = base64.b64encode(auth_line.encode()).decode()
         conn.send("AUTHENTICATE {}".format(auth_line))
+        # Wait for SASL to complete
+        # TODO log SASL response
+        await conn.wait_for('902', '903', '904', '905', '906', '907', '908', timeout=30)
 
 
 async def _isupport_handler(conn: 'IrcProtocol', message: 'Message'):
