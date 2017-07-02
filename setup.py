@@ -16,7 +16,7 @@ setup(
         'Programming Language :: Python :: 3.6',
     ],
     keywords='asyncio irc asyncirc async-irc irc-framework',
-    packages=['asyncirc'],
+    packages=['asyncirc', 'asyncirc.util'],
     install_requires=[],
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
