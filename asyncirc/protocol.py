@@ -10,7 +10,7 @@ from asyncio import Protocol
 from collections import defaultdict
 from enum import IntEnum, auto, unique
 from itertools import cycle
-from typing import Sequence, Optional, Tuple, Callable, Dict, Coroutine, AnyStr, TYPE_CHECKING
+from typing import Sequence, Optional, Tuple, Callable, Dict, Coroutine, AnyStr, TYPE_CHECKING, Any
 
 from asyncirc.irc import Message, CapList
 from asyncirc.server import ConnectedServer
@@ -161,14 +161,14 @@ class IrcProtocol(Protocol):
     async def __aenter__(self) -> 'IrcProtocol':
         return self.__enter__()
 
-    async def __aexit__(self, *exc):
+    async def __aexit__(self, *exc: Any) -> None:
         self.quit()
         await self.quit_future
 
-    def __enter__(self):
+    def __enter__(self) -> 'IrcProtocol':
         return self
 
-    def __exit__(self, *exc):
+    def __exit__(self, *exc: Any) -> None:
         self.quit()
 
     async def connect(self) -> None:
@@ -188,16 +188,19 @@ class IrcProtocol(Protocol):
                 self.logger.info("Reconnecting to %s", self.server)
             else:
                 self.logger.info("Connecting to %s", self.server)
+
         if self.server.is_ssl:
             ssl_ctx = ssl.create_default_context()
             if self.certpath:
                 ssl_ctx.load_cert_chain(self.certpath)
         else:
             ssl_ctx = None
+
         fut = self.loop.create_connection(self, self.server.host, self.server.port, ssl=ssl_ctx)
         try:
             await asyncio.wait_for(fut, 30)
         except asyncio.TimeoutError:
+            self.logger.error("Connection timeout occurred while connecting to %s", self.server)
             return False
         except ConnectionError as e:
             self.logger.error("Error occurred while connecting to %s (%s)", self.server, e)

@@ -29,7 +29,7 @@ class ConnectedServer(Server):
     Used to store session data like ISUPPORT tokens and enabled CAPs
     """
 
-    def __init__(self, server):
+    def __init__(self, server: 'Server') -> None:
         super().__init__(server.host, server.port, server.is_ssl, server.password)
         self.isupport_tokens: Dict[str, str] = {}
         self.caps: Dict[str, Tuple[Cap, Optional[bool]]] = {}

@@ -41,14 +41,14 @@ class Parseable(ABC):
     """Abstract class for parseable objects"""
 
     @abstractmethod
-    def __str__(self):
-        return NotImplemented
+    def __str__(self) -> str:
+        raise NotImplementedError
 
     @staticmethod
     @abstractmethod
     def parse(text: str) -> 'Parseable':
         """Parse the object from a string"""
-        return NotImplemented
+        raise NotImplementedError
 
 
 class Cap(Parseable):
@@ -58,15 +58,15 @@ class Cap(Parseable):
         self.name = name
         self.value = value or None
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.value:
             return CAP_VALUE_SEP.join((self.name, self.value))
         return self.name
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if isinstance(other, Cap):
             return self.name == other.name
-        return False
+        return NotImplemented
 
     @staticmethod
     def parse(text: str) -> 'Cap':
