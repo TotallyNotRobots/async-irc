@@ -6,6 +6,7 @@ import asyncio
 import base64
 import random
 import ssl
+import time
 from asyncio import Protocol
 from collections import defaultdict
 from enum import IntEnum, auto, unique
@@ -82,6 +83,15 @@ async def _internal_cap_handler(conn: 'IrcProtocol', message: 'Message'):
             conn.server.caps[cap.name] = (current, False)
 
 
+async def _internal_pong(conn: 'IrcProtocol', msg: 'Message'):
+    if msg.parameters[-1].startswith('LAG'):
+        now = time.time()
+        t = float(msg.parameters[-1][3:])
+        if conn.server.last_ping_sent == t:
+            conn.server.last_ping_recv = now
+            conn.server.lag = now - t
+
+
 async def _do_sasl(conn: 'IrcProtocol', cap):
     if not conn.sasl_mech or conn.sasl_mech is SASLMechanism.NONE:
         return
@@ -121,6 +131,8 @@ class IrcProtocol(Protocol):
     _transport: Optional['Transport'] = None
     _buff = b""
     _server: Optional['ConnectedServer'] = None
+    _connected = False
+    _quitting = False
 
     def __init__(self, servers: Sequence['Server'], nick: str, user: str = None, realname: str = None,
                  certpath: str = None, sasl_auth: Tuple[str, str] = None, sasl_mech: SASLMechanism = None,
@@ -138,9 +150,6 @@ class IrcProtocol(Protocol):
         if self.sasl_mech == SASLMechanism.PLAIN:
             assert self.sasl_auth, "You must specify sasl_auth when using SASL PLAIN"
 
-        self._connected = False
-        self._quitting = False
-
         self.handlers: Dict[int, Tuple[str, Callable]] = {}
         self.cap_handlers = defaultdict(list)
 
@@ -148,8 +157,24 @@ class IrcProtocol(Protocol):
         self.quit_future = self.loop.create_future()
 
         self.register("PING", _internal_ping)
+        self.register("PONG", _internal_pong)
         self.register("CAP", _internal_cap_handler)
         self.register_cap('sasl', _do_sasl)
+
+        self._pinger = self.loop.create_task(self.pinger())
+
+    def __del__(self) -> None:
+        if not self._pinger.done():
+            self._pinger.cancel()
+
+    async def pinger(self) -> None:
+        while True:
+            if self.connected:
+                if self.server.lag > 60:
+                    self.loop.create_task(self.connect())
+                else:
+                    self.send("PING :LAG{}".format(time.time()))
+            await asyncio.sleep(30)
 
     def __call__(self, *args, **kwargs) -> 'IrcProtocol':
         """

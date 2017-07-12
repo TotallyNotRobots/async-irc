@@ -28,6 +28,9 @@ class ConnectedServer(Server):
 
     Used to store session data like ISUPPORT tokens and enabled CAPs
     """
+    last_ping_sent = -1
+    last_ping_recv = -1
+    lag = -1
 
     def __init__(self, server: 'Server') -> None:
         super().__init__(server.host, server.port, server.is_ssl, server.password)
