@@ -226,10 +226,12 @@ class IrcProtocol(Protocol):
         try:
             await asyncio.wait_for(fut, 30)
         except asyncio.TimeoutError:
-            self.logger.error("Connection timeout occurred while connecting to %s", self.server)
+            if self.logger:
+                self.logger.error("Connection timeout occurred while connecting to %s", self.server)
             return False
         except (ConnectionError, socket.gaierror) as e:
-            self.logger.error("Error occurred while connecting to %s (%s)", self.server, e)
+            if self.logger:
+                self.logger.error("Error occurred while connecting to %s (%s)", self.server, e)
             return False
         return True
 
