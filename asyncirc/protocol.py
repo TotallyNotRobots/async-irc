@@ -5,6 +5,7 @@ Basic asyncio.Protocol interface for IRC connections
 import asyncio
 import base64
 import random
+import socket
 import ssl
 import time
 from asyncio import Protocol
@@ -227,7 +228,7 @@ class IrcProtocol(Protocol):
         except asyncio.TimeoutError:
             self.logger.error("Connection timeout occurred while connecting to %s", self.server)
             return False
-        except ConnectionError as e:
+        except (ConnectionError, socket.gaierror) as e:
             self.logger.error("Error occurred while connecting to %s (%s)", self.server, e)
             return False
         return True
