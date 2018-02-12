@@ -1,8 +1,8 @@
-# async-irc
+# async-irc [![Build Status](https://travis-ci.org/snoonetIRC/async-irc.svg?branch=master)](https://travis-ci.org/snoonetIRC/async-irc)
 An implementation of asyncio.Protocol for IRC
 
 ## Using the library
-- You can include it as a dependency in a `requirements.txt` in the form `git+https://github.com/SnoonetIRC/async-irc.git`
+- You can install the library using pip: `pip install py-irclib`
 
 ### Example
 ```python
