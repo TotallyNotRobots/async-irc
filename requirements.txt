@@ -1,3 +1,7 @@
 pytest
+pytest-cov
+pytest-pep8
+pytest-travis-fold
+python-coveralls
 setuptools
 py-irclib>=0.1.3
