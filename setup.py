@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='async-irc',
-    version='0.1.6',
+    version='0.1.7',
     python_requires=">=3.6",
     description="A simple asyncio.Protocol implementation designed for IRC",
     url='https://github.com/snoonetIRC/async-irc',
