@@ -1,4 +1,3 @@
-# coding=utf-8
 from setuptools import setup
 
 setup(
@@ -6,7 +5,7 @@ setup(
     version='0.1.5',
     python_requires=">=3.6",
     description="A simple asyncio.Protocol implementation designed for IRC",
-    url='https://github.com/SnoonetIRC/async-irc',
+    url='https://github.com/snoonetIRC/async-irc',
     author='linuxdaemon',
     author_email='linuxdaemon@snoonet.org',
     license='MIT',
