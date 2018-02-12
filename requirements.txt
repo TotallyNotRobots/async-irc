@@ -1,2 +1,3 @@
 pytest
 setuptools
+py-irclib>=0.1.3

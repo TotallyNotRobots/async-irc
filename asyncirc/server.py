@@ -5,7 +5,7 @@ to store contextual data
 """
 from typing import Optional, Dict, Tuple
 
-from asyncirc.irc import Cap
+from irclib.parser import Cap
 
 
 class Server:

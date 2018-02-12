@@ -14,13 +14,13 @@ from enum import IntEnum, auto, unique
 from itertools import cycle
 from typing import Sequence, Optional, Tuple, Callable, Dict, Coroutine, AnyStr, TYPE_CHECKING, Any
 
-from asyncirc.irc import Message, CapList
+from irclib.parser import Message, CapList, Cap
+
 from asyncirc.server import ConnectedServer
 from asyncirc.util.backoff import AsyncDelayer
 
 if TYPE_CHECKING:
     from logging import Logger
-    from asyncirc.irc import Cap
     from asyncirc.server import Server
     from asyncio import AbstractEventLoop, Transport
 

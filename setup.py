@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='async-irc',
-    version='0.1.5',
+    version='0.1.6',
     python_requires=">=3.6",
     description="A simple asyncio.Protocol implementation designed for IRC",
     url='https://github.com/snoonetIRC/async-irc',
@@ -16,7 +16,7 @@ setup(
     ],
     keywords='asyncio irc asyncirc async-irc irc-framework',
     packages=['asyncirc', 'asyncirc.util'],
-    install_requires=[],
+    install_requires=['py-irclib'],
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
 )
