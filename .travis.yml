@@ -6,6 +6,7 @@ python:
 cache: pip
 install:
 - sudo apt-get update -q
+- sudo apt-get install python-dev libpython-dev
 - pip install -r ./requirements.txt
 script:
 - py.test . -v --cov . --cov-report term-missing
