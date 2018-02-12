@@ -2,7 +2,7 @@
 An implementation of asyncio.Protocol for IRC
 
 ## Using the library
-- You can install the library using pip: `pip install py-irclib`
+- You can install the library using pip: `pip install async-irc`
 
 ### Example
 ```python
