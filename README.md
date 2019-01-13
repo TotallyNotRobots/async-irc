@@ -11,6 +11,8 @@ import asyncio
 from asyncirc.protocol import IrcProtocol
 from asyncirc.server import Server
 
+loop = asyncio.get_event_loop()
+
 servers = [
     Server("irc.example.org", 6697, True),
     Server("irc.example.com", 6667),
