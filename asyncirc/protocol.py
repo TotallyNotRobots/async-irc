@@ -126,6 +126,10 @@ async def _isupport_handler(conn: 'IrcProtocol', message: 'Message'):
             conn.server.isupport_tokens[name.upper()] = value or None
 
 
+async def _on_001(conn: 'IrcProtocol', message: 'Message'):
+    conn.server.server_name = message.prefix.mask
+
+
 class IrcProtocol(Protocol):
     """Async IRC Interface"""
 
@@ -160,6 +164,7 @@ class IrcProtocol(Protocol):
         self.register("PING", _internal_ping)
         self.register("PONG", _internal_pong)
         self.register("CAP", _internal_cap_handler)
+        self.register('001', _on_001)
         self.register_cap('sasl', _do_sasl)
 
         self._pinger = self.loop.create_task(self.pinger())

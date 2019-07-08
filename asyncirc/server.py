@@ -36,3 +36,4 @@ class ConnectedServer(Server):
         super().__init__(server.host, server.port, server.is_ssl, server.password)
         self.isupport_tokens: Dict[str, str] = {}
         self.caps: Dict[str, Tuple[Cap, Optional[bool]]] = {}
+        self.server_name = None
