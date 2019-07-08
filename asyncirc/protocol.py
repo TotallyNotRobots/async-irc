@@ -6,7 +6,6 @@ import asyncio
 import base64
 import random
 import socket
-import ssl
 import time
 from asyncio import Protocol
 from collections import defaultdict
@@ -21,7 +20,7 @@ from asyncirc.util.backoff import AsyncDelayer
 
 if TYPE_CHECKING:
     from logging import Logger
-    from asyncirc.server import Server
+    from asyncirc.server import Server, BaseServer
     from asyncio import AbstractEventLoop, Transport
 
 
@@ -210,7 +209,7 @@ class IrcProtocol(Protocol):
                 if await self._connect(server):
                     break
 
-    async def _connect(self, server: 'Server') -> bool:
+    async def _connect(self, server: 'BaseServer') -> bool:
         self._connected_future = self.loop.create_future()
         self.quit_future = self.loop.create_future()
         self._server = ConnectedServer(server)
@@ -220,14 +219,7 @@ class IrcProtocol(Protocol):
             else:
                 self.logger.info("Connecting to %s", self.server)
 
-        if self.server.is_ssl:
-            ssl_ctx = ssl.create_default_context()
-            if self.certpath:
-                ssl_ctx.load_cert_chain(self.certpath)
-        else:
-            ssl_ctx = None
-
-        fut = self.loop.create_connection(self, self.server.host, self.server.port, ssl=ssl_ctx)
+        fut = self.server.connection.do_connect(self)
         try:
             await asyncio.wait_for(fut, 30)
         except asyncio.TimeoutError:
