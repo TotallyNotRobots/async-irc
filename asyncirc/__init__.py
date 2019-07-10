@@ -3,4 +3,4 @@
 Async IRC Interface Library
 """
 
-__all__ = ["error", "irc", "protocol", "server"]
+__all__ = ("protocol", "server")

@@ -9,6 +9,15 @@ from typing import Dict, Optional, Tuple
 
 from irclib.parser import Cap
 
+__all__ = (
+    'BaseServer',
+    'Server',
+    'BasicIPServer',
+    'BasicUNIXServer',
+    'ConnectedServer',
+    'BadAttribute',
+)
+
 
 class BaseServer:
     def __init__(

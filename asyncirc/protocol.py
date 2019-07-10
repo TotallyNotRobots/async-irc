@@ -24,6 +24,9 @@ if TYPE_CHECKING:
     from asyncio import AbstractEventLoop, Transport
 
 
+__all__ = ('SASLMechanism', 'IrcProtocol')
+
+
 @unique
 class SASLMechanism(IntEnum):
     """Represents different SASL auth mechanisms"""
