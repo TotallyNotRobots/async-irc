@@ -7,6 +7,8 @@ import asyncio
 import random
 from typing import Any, Callable
 
+__all__ = ('AsyncDelayer',)
+
 
 class AsyncDelayer:
     """Implementation of the exponential back-off algorithm for handling server reconnects
