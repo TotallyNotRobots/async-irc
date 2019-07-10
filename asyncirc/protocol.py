@@ -283,6 +283,10 @@ class IrcProtocol(Protocol):
         """Send a raw line to the server"""
         asyncio.run_coroutine_threadsafe(self._send(text), self.loop)
 
+    def send_command(self, msg: Message) -> None:
+        """Send an irclib Message object to the server"""
+        return self.send(str(msg))
+
     async def _send(self, text: AnyStr) -> None:
         if not self.connected:
             await self._connected_future
