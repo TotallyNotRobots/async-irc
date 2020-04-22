@@ -1,5 +1,5 @@
 pytest==5.4.1
-pytest-cov
+pytest-cov==2.8.1
 pytest-pep8
 pytest-travis-fold
 python-coveralls
