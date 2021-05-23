@@ -63,8 +63,13 @@ async def _internal_cap_handler(conn: 'IrcProtocol', message: 'Message'):
             if enabled:
                 handlers = filter(None, conn.cap_handlers[cap.name])
                 await asyncio.gather(*[func(conn, cap) for func in handlers])
+
         if all(val[1] is not None for val in conn.server.caps.values()):
-            conn.send("CAP END")
+            # If SASL is enabled, SASL negotiation should be complete before sending CAP END,
+            # so this is done in the SASL handler.
+            if conn.sasl_mech == SASLMechanism.NONE:
+                conn.send("CAP END")
+
     elif message.parameters[1] == 'LIST':
         if conn.logger:
             conn.logger.info("Current Capabilities: %s", caplist)
@@ -116,6 +121,11 @@ async def _do_sasl(conn: 'IrcProtocol', cap):
         # Wait for SASL to complete
         # TODO log SASL response
         await conn.wait_for('902', '903', '904', '905', '906', '907', '908', timeout=30)
+
+    # Send CAP END here, because it shouldn't be sent before SASL auth is complete
+    # NOTE: there is a (probably unlikely) race condition here, if CAP negotiation is
+    # incomplete by this point.
+    conn.send("CAP END")
 
 
 async def _isupport_handler(conn: 'IrcProtocol', message: 'Message'):
