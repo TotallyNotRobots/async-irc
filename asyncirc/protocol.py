@@ -110,7 +110,8 @@ async def _do_sasl(conn: 'IrcProtocol', cap):
     if auth_msg and auth_msg.parameters[0] == '+':
         auth_line = '+'
         if conn.sasl_mech is SASLMechanism.PLAIN:
-            auth_line = '\0'.join((conn.nick, *conn.sasl_auth))
+            user, password = conn.sasl_auth
+            auth_line = '\0'.join((user, user, password))
             auth_line = base64.b64encode(auth_line.encode()).decode()
         conn.send("AUTHENTICATE {}".format(auth_line))
         # Wait for SASL to complete
