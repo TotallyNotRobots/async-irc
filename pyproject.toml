@@ -1,0 +1,101 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "async-irc"
+dynamic = ["version"]
+description = "A simple asyncio.Protocol implementation designed for IRC"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.8"
+authors = [
+    { name = "linuxdaemon", email = "linuxdaemon@snoonet.org" },
+]
+keywords = [
+    "async-irc",
+    "asyncio",
+    "asyncirc",
+    "irc",
+    "irc-framework",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.8",
+]
+dependencies = [
+    "py-irclib",
+]
+
+[project.urls]
+Homepage = "https://github.com/TotallyNotRobots/async-irc"
+
+[tool.hatch.version]
+path = "asyncirc/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/asyncirc",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "asyncirc",
+]
+
+[tool.isort]
+line_length = 80
+multi_line_output = 3
+include_trailing_comma = true
+use_parentheses = true
+known_first_party = ["asyncirc", "tests"]
+float_to_top = true
+
+[tool.black]
+line-length = 80
+target-version = ['py38']
+include = '\.pyi?$'
+exclude = '''
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+    | venv
+  )/
+)
+'''
+
+[tool.pylint.main]
+analyse-fallback-blocks = true
+py-version = "3.8"
+
+[tool.pylint.messages_control]
+disable = [
+]
+
+enable = ["c-extension-no-member"]
+
+[tool.pylint.typecheck]
+generated-members = "(requests\\.)?codes\\.[a-zA-Z0-9_]+"
+
+[tool.mypy]
+namespace_packages = true
+python_version = "3.8"
+warn_unused_configs = true
+strict = false
+strict_optional = false
+ignore_missing_imports = true
+check_untyped_defs = true
+show_error_codes = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+# strict_equality = true
