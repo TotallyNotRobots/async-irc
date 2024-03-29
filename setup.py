@@ -1,10 +1,16 @@
 from setuptools import setup
+from pathlib import Path
+
+this_directory = Path(__file__).parent
+long_description = (this_directory / "README.md").read_text()
 
 setup(
     name='async-irc',
     version='0.1.8',
     python_requires=">=3.6",
     description="A simple asyncio.Protocol implementation designed for IRC",
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     url='https://github.com/TotallyNotRobots/async-irc',
     author='linuxdaemon',
     author_email='linuxdaemon@snoonet.org',
