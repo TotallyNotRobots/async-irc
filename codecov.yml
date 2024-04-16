@@ -1,0 +1,22 @@
+comment:
+  require_changes: true
+coverage:
+  status:
+    patch:
+      default: false
+      tests:
+        target: 100%
+        paths:
+          - tests/
+      core:
+        paths:
+          - asyncirc/
+        target: 100%
+    project:
+      tests:
+        target: 100%
+        paths:
+          - tests/
+      core:
+        paths:
+          - asyncirc/
