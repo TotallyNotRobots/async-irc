@@ -6,9 +6,10 @@
     "dockerFile": "./Dockerfile",
     "context": "..",
     "features": {
-        "ghcr.io/devcontainers-contrib/features/zsh-plugins:0": {
+        "ghcr.io/devcontainers-contrib/features/zsh-plugins": {
             "omzPlugins": "https://github.com/zsh-users/zsh-autosuggestions"
-        }
+        },
+        "ghcr.io/devcontainers/features/docker-in-docker": {}
     },
 
     // Features to add to the dev container. More info: https://containers.dev/features.
@@ -18,7 +19,7 @@
     // "forwardPorts": [],
 
     // Use 'postCreateCommand' to run commands after the container is created.
-    "postCreateCommand": "pip3 install -Ur requirements.txt",
+    "postCreateCommand": "hatch run setup-dev",
     // Configure tool-specific properties.
     // "customizations": {},
 
@@ -31,17 +32,26 @@
                 "ms-python.python",
                 "ms-python.vscode-pylance",
                 "EditorConfig.EditorConfig",
-                "GitHub.vscode-pull-request-github"
+                "GitHub.vscode-pull-request-github",
+                "github.vscode-github-actions",
+                "redhat.vscode-yaml",
+                "ms-python.black-formatter",
+                "ms-python.isort",
+                "ms-azuretools.vscode-docker",
+                "ms-python.mypy-type-checker"
             ],
             "settings": {
-                "python.pythonPath": "/usr/local/bin/python",
+                "python.defaultInterpreterPath": "~/.virtualenvs/async-irc/bin/python",
                 "python.testing.pytestArgs": ["--no-cov"],
                 "terminal.integrated.profiles.linux": {
                     "zsh": {
                         "path": "/usr/bin/zsh"
                     }
                 },
-                "terminal.integrated.defaultProfile.linux": "zsh"
+                "terminal.integrated.defaultProfile.linux": "zsh",
+                "[python]": {
+                    "editor.defaultFormatter": "ms-python.black-formatter"
+                }
             }
         }
     }

@@ -1,93 +1,121 @@
-# coding=utf-8
 """
 Basic asyncio.Protocol interface for IRC connections
 """
+
 import asyncio
 import base64
 import random
 import socket
 import time
-from asyncio import Protocol
+from asyncio import Protocol, Task
 from collections import defaultdict
 from enum import IntEnum, auto, unique
 from itertools import cycle
-from typing import Sequence, Optional, Tuple, Callable, Dict, Coroutine, AnyStr, TYPE_CHECKING, Any
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    AnyStr,
+    Callable,
+    Coroutine,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    cast,
+)
 
-from irclib.parser import Message, CapList, Cap
+from irclib.parser import Cap, CapList, Message
 
 from asyncirc.server import ConnectedServer
 from asyncirc.util.backoff import AsyncDelayer
 
 if TYPE_CHECKING:
-    from logging import Logger
-    from asyncirc.server import Server, BaseServer
     from asyncio import AbstractEventLoop, Transport
+    from logging import Logger
+
+    from asyncirc.server import BaseServer, Server
 
 
-__all__ = ('SASLMechanism', 'IrcProtocol')
+__all__ = ("SASLMechanism", "IrcProtocol")
 
 
 @unique
 class SASLMechanism(IntEnum):
     """Represents different SASL auth mechanisms"""
+
     NONE = auto()
     PLAIN = auto()
     EXTERNAL = auto()
 
 
-async def _internal_ping(conn: 'IrcProtocol', message: 'Message'):
-    conn.send("PONG {}".format(message.parameters))
+async def _internal_ping(conn: "IrcProtocol", message: "Message") -> None:
+    conn.send(f"PONG {message.parameters}")
 
 
-async def _internal_cap_handler(conn: 'IrcProtocol', message: 'Message'):
-    caplist = []
+async def _internal_cap_handler(
+    conn: "IrcProtocol", message: "Message"
+) -> None:
+    if conn.server is None:
+        raise ValueError("Server not set in handler")
+
+    caplist: List[Cap] = []
     if len(message.parameters) > 2:
         caplist = CapList.parse(message.parameters[-1])
 
-    if message.parameters[1] == 'LS':
+    if message.parameters[1] == "LS":
         for cap in caplist:
             if cap.name in conn.cap_handlers:
                 conn.server.caps[cap.name] = (cap, None)
 
-        if message.parameters[2] != '*':
-            for cap in conn.server.caps:
-                conn.send("CAP REQ :{}".format(cap))
-            if not conn.server.caps:
-                conn.send("CAP END")  # We haven't request any CAPs, send a CAP END to end negotiation
+        if message.parameters[2] != "*":
+            for cap_name in conn.server.caps:
+                conn.send(f"CAP REQ :{cap_name}")
 
-    elif message.parameters[1] in ('ACK', 'NAK'):
-        enabled = message.parameters[1] == 'ACK'
+            if not conn.server.caps:
+                # We haven't request any CAPs, send a CAP END to end negotiation
+                conn.send("CAP END")
+
+    elif message.parameters[1] in ("ACK", "NAK"):
+        enabled = message.parameters[1] == "ACK"
         for cap in caplist:
             current = conn.server.caps[cap.name][0]
             conn.server.caps[cap.name] = (current, enabled)
             if enabled:
                 handlers = filter(None, conn.cap_handlers[cap.name])
                 await asyncio.gather(*[func(conn, cap) for func in handlers])
+
         if all(val[1] is not None for val in conn.server.caps.values()):
             conn.send("CAP END")
-    elif message.parameters[1] == 'LIST':
+    elif message.parameters[1] == "LIST":
         if conn.logger:
             conn.logger.info("Current Capabilities: %s", caplist)
-    elif message.parameters[1] == 'NEW':
+    elif message.parameters[1] == "NEW":
         if conn.logger:
             conn.logger.info("New capabilities advertised: %s", caplist)
+
         for cap in caplist:
             if cap.name in conn.cap_handlers:
                 conn.server.caps[cap.name] = (cap, None)
 
-        if message.parameters[2] != '*':
-            for cap in conn.server.caps:
-                conn.send("CAP REQ :{}".format(cap))
-    elif message.parameters[1] == 'DEL':
+        if message.parameters[2] != "*":
+            for cap_name in conn.server.caps:
+                conn.send(f"CAP REQ :{cap_name}")
+    elif message.parameters[1] == "DEL":
         if conn.logger:
             conn.logger.info("Capabilities removed: %s", caplist)
+
         for cap in caplist:
             current = conn.server.caps[cap.name][0]
             conn.server.caps[cap.name] = (current, False)
 
 
-async def _internal_pong(conn: 'IrcProtocol', msg: 'Message'):
-    if msg.parameters[-1].startswith('LAG'):
+async def _internal_pong(conn: "IrcProtocol", msg: "Message") -> None:
+    if conn.server is None:
+        raise ValueError("Server not set in handler")
+
+    if msg.parameters[-1].startswith("LAG"):
         now = time.time()
         t = float(msg.parameters[-1][3:])
         if conn.server.last_ping_sent == t:
@@ -95,56 +123,94 @@ async def _internal_pong(conn: 'IrcProtocol', msg: 'Message'):
             conn.server.lag = now - t
 
 
-async def _do_sasl(conn: 'IrcProtocol', cap):
+async def _do_sasl(conn: "IrcProtocol", cap: Cap) -> None:
+    if conn.server is None:
+        raise ValueError("Server not set in handler")
+
     if not conn.sasl_mech or conn.sasl_mech is SASLMechanism.NONE:
         return
-    supported_mechs = cap.value
-    if supported_mechs is not None:
-        supported_mechs = supported_mechs.split(',')
+
+    if cap.value is not None:
+        supported_mechs: Optional[List[str]] = cap.value.split(",")
+    else:
+        supported_mechs = None
+
     if supported_mechs and conn.sasl_mech.name not in supported_mechs:
         if conn.logger:
-            conn.logger.warning("Server doesn't support configured SASL mechanism '%s'", conn.sasl_mech)
+            conn.logger.warning(
+                "Server doesn't support configured SASL mechanism '%s'",
+                conn.sasl_mech,
+            )
+
         return
-    conn.send("AUTHENTICATE {}".format(conn.sasl_mech.name))
+
+    conn.send(f"AUTHENTICATE {conn.sasl_mech.name}")
     auth_msg = await conn.wait_for("AUTHENTICATE", timeout=5)
-    if auth_msg and auth_msg.parameters[0] == '+':
-        auth_line = '+'
+    if auth_msg and auth_msg.parameters[0] == "+":
+        auth_line = "+"
         if conn.sasl_mech is SASLMechanism.PLAIN:
+            if conn.sasl_auth is None:
+                raise ValueError(
+                    "You must specify sasl_auth when using SASL PLAIN"
+                )
+
             user, password = conn.sasl_auth
-            auth_line = '\0'.join((user, user, password))
+            auth_line = "\0".join((user, user, password))
             auth_line = base64.b64encode(auth_line.encode()).decode()
-        conn.send("AUTHENTICATE {}".format(auth_line))
+
+        conn.send(f"AUTHENTICATE {auth_line}")
         # Wait for SASL to complete
         # TODO log SASL response
-        await conn.wait_for('902', '903', '904', '905', '906', '907', '908', timeout=30)
+        await conn.wait_for(
+            "902", "903", "904", "905", "906", "907", "908", timeout=30
+        )
 
 
-async def _isupport_handler(conn: 'IrcProtocol', message: 'Message'):
-    tokens = message.parameters[1:-1]  # Remove the nick and trailing ':are supported by this server' message
+async def _isupport_handler(conn: "IrcProtocol", message: "Message") -> None:
+    if conn.server is None:
+        raise ValueError("Server not set in handler")
+
+    # Remove the nick and trailing ':are supported by this server' message
+    tokens = message.parameters[1:-1]
     for token in tokens:
-        if token[0] == '-' and token.upper() in conn.server.isupport_tokens:
+        if token[0] == "-" and token.upper() in conn.server.isupport_tokens:
             del conn.server.isupport_tokens[token.upper()]
         else:
-            name, _, value = token.partition('=')
+            name, _, value = token.partition("=")
             conn.server.isupport_tokens[name.upper()] = value or None
 
 
-async def _on_001(conn: 'IrcProtocol', message: 'Message'):
+async def _on_001(conn: "IrcProtocol", message: "Message") -> None:
+    if conn.server is None:
+        raise ValueError("Server not set in handler")
+
+    if not message.prefix:
+        raise ValueError(f"Missing prefix in 001: {message}")
+
     conn.server.server_name = message.prefix.mask
 
 
 class IrcProtocol(Protocol):
     """Async IRC Interface"""
 
-    _transport: Optional['Transport'] = None
+    _transport: Optional["Transport"] = None
     _buff = b""
-    _server: Optional['ConnectedServer'] = None
+    _server: Optional["ConnectedServer"] = None
     _connected = False
     _quitting = False
 
-    def __init__(self, servers: Sequence['Server'], nick: str, user: str = None, realname: str = None,
-                 certpath: str = None, sasl_auth: Tuple[str, str] = None, sasl_mech: SASLMechanism = None,
-                 logger: 'Logger' = None, loop: 'AbstractEventLoop' = None) -> None:
+    def __init__(
+        self,
+        servers: Sequence["Server"],
+        nick: str,
+        user: Optional[str] = None,
+        realname: Optional[str] = None,
+        certpath: Optional[str] = None,
+        sasl_auth: Optional[Tuple[str, str]] = None,
+        sasl_mech: Optional[SASLMechanism] = None,
+        logger: Optional["Logger"] = None,
+        loop: Optional["AbstractEventLoop"] = None,
+    ) -> None:
         self.servers = servers
         self.nick = nick
         self._user = user
@@ -155,11 +221,28 @@ class IrcProtocol(Protocol):
         self.logger = logger
         self.loop = loop or asyncio.get_event_loop()
 
-        if self.sasl_mech == SASLMechanism.PLAIN:
-            assert self.sasl_auth, "You must specify sasl_auth when using SASL PLAIN"
+        if self.sasl_mech == SASLMechanism.PLAIN and self.sasl_auth is None:
+            raise ValueError("You must specify sasl_auth when using SASL PLAIN")
 
-        self.handlers: Dict[int, Tuple[str, Callable]] = {}
-        self.cap_handlers = defaultdict(list)
+        self.handlers: Dict[
+            int,
+            Tuple[
+                str,
+                Callable[
+                    ["IrcProtocol", "Message"], Coroutine[None, None, None]
+                ],
+            ],
+        ] = {}
+        self.cap_handlers: Dict[
+            str,
+            List[
+                Optional[
+                    Callable[
+                        ["IrcProtocol", "Cap"], Coroutine[None, None, None]
+                    ]
+                ]
+            ],
+        ] = defaultdict(list)
 
         self._connected_future = self.loop.create_future()
         self.quit_future = self.loop.create_future()
@@ -167,43 +250,64 @@ class IrcProtocol(Protocol):
         self.register("PING", _internal_ping)
         self.register("PONG", _internal_pong)
         self.register("CAP", _internal_cap_handler)
-        self.register('001', _on_001)
-        self.register_cap('sasl', _do_sasl)
+        self.register("001", _on_001)
+        self.register("005", _isupport_handler)
+        self.register_cap("sasl", _do_sasl)
 
-        self._pinger = self.loop.create_task(self.pinger())
+        self._pinger: Optional[Task[None]] = self.loop.create_task(
+            self.pinger()
+        )
 
     def __del__(self) -> None:
-        if not self._pinger.done():
-            self._pinger.cancel()
+        self.close()
 
     async def pinger(self) -> None:
         while True:
             if self.connected:
+                if self.server is None:
+                    raise ValueError("Server not set in ping handler")
+
                 if self.server.lag > 60:
                     self.loop.create_task(self.connect())
                 else:
-                    self.send("PING :LAG{}".format(time.time()))
+                    self.send(f"PING :LAG{time.time()}")
+
             await asyncio.sleep(30)
 
-    def __call__(self, *args, **kwargs) -> 'IrcProtocol':
+    def __call__(self) -> "IrcProtocol":
         """
         This is here to allow an instance of IrcProtocol to be passed
         directly to AbstractEventLoop.create_connection()
         """
         return self
 
-    async def __aenter__(self) -> 'IrcProtocol':
+    async def __aenter__(self) -> "IrcProtocol":
         return self.__enter__()
 
     async def __aexit__(self, *exc: Any) -> None:
-        self.quit()
-        await self.quit_future
+        if self.connected:
+            self.quit()
+            await self.quit_future
 
-    def __enter__(self) -> 'IrcProtocol':
+        self.close()
+
+    def __enter__(self) -> "IrcProtocol":
         return self
 
     def __exit__(self, *exc: Any) -> None:
-        self.quit()
+        if self.connected:
+            self.quit()
+
+        self.close()
+
+    def close(self) -> None:
+        if (
+            self._pinger
+            and self._pinger.get_loop().is_running()
+            and not self._pinger.done()
+        ):
+            self._pinger.cancel()
+            self._pinger = None
 
     async def connect(self) -> None:
         """Attempt to connect to the server, cycling through the server list until successful"""
@@ -213,7 +317,7 @@ class IrcProtocol(Protocol):
                 if await self._connect(server):
                     break
 
-    async def _connect(self, server: 'BaseServer') -> bool:
+    async def _connect(self, server: "BaseServer") -> bool:
         self._connected_future = self.loop.create_future()
         self.quit_future = self.loop.create_future()
         self._server = ConnectedServer(server)
@@ -223,24 +327,39 @@ class IrcProtocol(Protocol):
             else:
                 self.logger.info("Connecting to %s", self.server)
 
-        fut = self.server.connection.do_connect(self)
+        fut = self._server.connection.do_connect(self)
         try:
             await asyncio.wait_for(fut, 30)
         except asyncio.TimeoutError:
             if self.logger:
-                self.logger.error("Connection timeout occurred while connecting to %s", self.server)
+                self.logger.error(
+                    "Connection timeout occurred while connecting to %s",
+                    self.server,
+                )
+
             return False
         except (ConnectionError, socket.gaierror) as e:
             if self.logger:
-                self.logger.error("Error occurred while connecting to %s (%s)", self.server, e)
+                self.logger.error(
+                    "Error occurred while connecting to %s (%s)", self.server, e
+                )
+
             return False
+
         return True
 
-    def register(self, cmd: str, handler: Callable[['IrcProtocol', 'Message'], Coroutine]) -> int:
+    def register(
+        self,
+        cmd: str,
+        handler: Callable[
+            ["IrcProtocol", "Message"], Coroutine[None, None, None]
+        ],
+    ) -> int:
         """Register a command handler"""
         hook_id = 0
         while not hook_id or hook_id in self.handlers:
-            hook_id = random.randint(1, (2 ** 32) - 1)
+            hook_id = random.randint(1, (2**32) - 1)
+
         self.handlers[hook_id] = (cmd, handler)
         return hook_id
 
@@ -248,7 +367,13 @@ class IrcProtocol(Protocol):
         """Unregister a hook"""
         del self.handlers[hook_id]
 
-    def register_cap(self, cap: str, handler: Optional[Callable[['IrcProtocol', 'Cap'], Coroutine]] = None) -> None:
+    def register_cap(
+        self,
+        cap: str,
+        handler: Optional[
+            Callable[["IrcProtocol", "Cap"], Coroutine[None, None, None]]
+        ] = None,
+    ) -> None:
         """Register a CAP handler
 
         If the handler is None, the CAP will be requested from the server, but no handler will be called,
@@ -256,20 +381,21 @@ class IrcProtocol(Protocol):
         """
         self.cap_handlers[cap].append(handler)
 
-    async def wait_for(self, *cmds: str, timeout: int = None) -> None:
+    async def wait_for(
+        self, *cmds: str, timeout: Optional[int] = None
+    ) -> Optional[Message]:
         """Wait for a specific command from the server, optionally returning after [timeout] seconds"""
         if not cmds:
-            return
-        fut = self.loop.create_future()
+            return None
+
+        fut: "asyncio.Future[Message]" = self.loop.create_future()
 
         # noinspection PyUnusedLocal
-        async def _wait(conn: 'IrcProtocol', message: 'Message') -> None:
+        async def _wait(conn: "IrcProtocol", message: "Message") -> None:
             if not fut.done():
                 fut.set_result(message)
 
-        hooks = [
-            self.register(cmd, _wait) for cmd in cmds
-        ]
+        hooks = [self.register(cmd, _wait) for cmd in cmds]
 
         try:
             result = await asyncio.wait_for(fut, timeout)
@@ -278,9 +404,10 @@ class IrcProtocol(Protocol):
         finally:
             for hook_id in hooks:
                 self.unregister(hook_id)
+
         return result
 
-    def send(self, text: AnyStr) -> None:
+    def send(self, text: Union[str, bytes]) -> None:
         """Send a raw line to the server"""
         asyncio.run_coroutine_threadsafe(self._send(text), self.loop)
 
@@ -288,37 +415,49 @@ class IrcProtocol(Protocol):
         """Send an irclib Message object to the server"""
         return self.send(str(msg))
 
-    async def _send(self, text: AnyStr) -> None:
+    async def _send(self, text: Union[str, bytes]) -> None:
         if not self.connected:
             await self._connected_future
+
         if isinstance(text, str):
             text = text.encode()
+        elif isinstance(text, memoryview):
+            text = text.tobytes()
+
         if self.logger:
             self.logger.info(">> %s", text.decode())
-        self._transport.write(text + b'\r\n')
 
-    def quit(self, reason: str = None) -> None:
+        if self._transport is None:
+            raise ValueError("Can't send to missing transport")
+
+        self._transport.write(text + b"\r\n")
+
+    def quit(self, reason: Optional[str] = None) -> None:
         """Quit the IRC connection with an optional reason"""
         if not self._quitting:
             self._quitting = True
             if reason:
-                self.send("QUIT {}".format(reason))
+                self.send(f"QUIT {reason}")
             else:
                 self.send("QUIT")
 
-    def connection_made(self, transport: 'Transport') -> None:
+    def connection_made(self, transport: "asyncio.BaseTransport") -> None:
         """Called by the event loop when the connection has been established"""
-        self._transport = transport
+        if not self.server:
+            raise ValueError("Server not set during connection_made()")
+
+        self._transport = cast(asyncio.Transport, transport)
         self._connected = True
         self._connected_future.set_result(None)
         del self._connected_future
         self.send("CAP LS 302")
         if self.server.password:
-            self.send("PASS {}".format(self.server.password))
-        self.send("NICK {}".format(self.nick))
-        self.send("USER {} 0 * :{}".format(self.user, self.realname))
+            self.send(f"PASS {self.server.password}")
 
-    def connection_lost(self, exc) -> None:
+        self.send(f"NICK {self.nick}")
+        self.send(f"USER {self.user} 0 * :{self.realname}")
+
+    def connection_lost(self, exc: Optional[Exception]) -> None:
         """Connection to the IRC server has been lost"""
         self._transport = None
         self._connected = False
@@ -331,11 +470,11 @@ class IrcProtocol(Protocol):
     def data_received(self, data: bytes) -> None:
         """Called by the event loop when data has been read from the socket"""
         self._buff += data
-        while b'\r\n' in self._buff:
-            raw_line, self._buff = self._buff.split(b'\r\n', 1)
+        while b"\r\n" in self._buff:
+            raw_line, self._buff = self._buff.split(b"\r\n", 1)
             message = Message.parse(raw_line)
             for trigger, func in self.handlers.values():
-                if trigger in (message.command, '*'):
+                if trigger in (message.command, "*"):
                     self.loop.create_task(func(self, message))
 
     @property
@@ -362,6 +501,6 @@ class IrcProtocol(Protocol):
         return self._connected
 
     @property
-    def server(self) -> Optional['ConnectedServer']:
+    def server(self) -> Optional["ConnectedServer"]:
         """The current server object"""
         return self._server

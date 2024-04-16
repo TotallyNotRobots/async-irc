@@ -1,32 +1,33 @@
-# coding=utf-8
 """
 Server objects used for different stages in the connect process
 to store contextual data
 """
+
 import asyncio
 import ssl
-from typing import Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple, TypeVar
 
 from irclib.parser import Cap
 
 __all__ = (
-    'BaseServer',
-    'Server',
-    'BasicIPServer',
-    'BasicUNIXServer',
-    'ConnectedServer',
-    'BadAttribute',
+    "BaseServer",
+    "Server",
+    "BasicIPServer",
+    "BasicUNIXServer",
+    "ConnectedServer",
 )
+
+_ProtoT = TypeVar("_ProtoT", bound=asyncio.Protocol)
 
 
 class BaseServer:
     def __init__(
         self,
         *,
-        password: str = None,
+        password: Optional[str] = None,
         is_ssl: bool = False,
-        ssl_ctx: ssl.SSLContext = None,
-        certpath: str = None,
+        ssl_ctx: Optional[ssl.SSLContext] = None,
+        certpath: Optional[str] = None,
     ):
         if is_ssl:
             if ssl_ctx is None:
@@ -35,20 +36,31 @@ class BaseServer:
             if certpath:
                 ssl_ctx.load_cert_chain(certpath)
 
-            self.ssl_ctx = ssl_ctx
+            self.ssl_ctx: Optional[ssl.SSLContext] = ssl_ctx
         else:
             self.ssl_ctx = None
 
         self.password = password
 
     @property
-    def is_ssl(self):
+    def is_ssl(self) -> bool:
         return self.ssl_ctx is not None
 
-    async def connect(self, protocol_factory, *, loop=None, **kwargs):
+    async def connect(
+        self,
+        protocol_factory: Callable[[], _ProtoT],
+        *,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
+        **kwargs: Any,
+    ) -> Tuple[asyncio.Transport, _ProtoT]:
         raise NotImplementedError
 
-    async def do_connect(self, protocol_factory, *, loop=None):
+    async def do_connect(
+        self,
+        protocol_factory: Callable[[], _ProtoT],
+        *,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
+    ) -> Tuple[asyncio.Transport, _ProtoT]:
         return await self.connect(protocol_factory, loop=loop, ssl=self.ssl_ctx)
 
     def __str__(self) -> str:
@@ -64,17 +76,24 @@ class BasicIPServer(BaseServer):
         host: str,
         port: int,
         is_ssl: bool = False,
-        password: str = None,
-        ssl_ctx: ssl.SSLContext = None,
-        certpath: str = None,
+        password: Optional[str] = None,
+        ssl_ctx: Optional[ssl.SSLContext] = None,
+        certpath: Optional[str] = None,
     ) -> None:
         super().__init__(
             password=password, is_ssl=is_ssl, ssl_ctx=ssl_ctx, certpath=certpath
         )
+
         self.host = host
         self.port = port
 
-    async def connect(self, protocol_factory, *, loop=None, **kwargs):
+    async def connect(
+        self,
+        protocol_factory: Callable[[], _ProtoT],
+        *,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
+        **kwargs: Any,
+    ) -> Tuple[asyncio.Transport, _ProtoT]:
         if loop is None:
             loop = asyncio.get_event_loop()
 
@@ -84,9 +103,9 @@ class BasicIPServer(BaseServer):
 
     def __str__(self) -> str:
         if self.is_ssl:
-            return "{}:+{}".format(self.host, self.port)
+            return f"{self.host}:+{self.port}"
 
-        return "{}:{}".format(self.host, self.port)
+        return f"{self.host}:{self.port}"
 
 
 class BasicUNIXServer(BaseServer):
@@ -95,24 +114,32 @@ class BasicUNIXServer(BaseServer):
         *,
         path: str,
         is_ssl: bool = False,
-        password: str = None,
-        ssl_ctx: ssl.SSLContext = None,
-        certpath: str = None,
+        password: Optional[str] = None,
+        ssl_ctx: Optional[ssl.SSLContext] = None,
+        certpath: Optional[str] = None,
     ) -> None:
         super().__init__(
             is_ssl=is_ssl, password=password, ssl_ctx=ssl_ctx, certpath=certpath
         )
         self.path = path
 
-    async def connect(self, protocol_factory, *, loop=None, **kwargs):
+    async def connect(
+        self,
+        protocol_factory: Callable[[], _ProtoT],
+        *,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
+        **kwargs: Any,
+    ) -> Tuple[asyncio.Transport, _ProtoT]:
         if loop is None:
             loop = asyncio.get_event_loop()
 
-        return await loop.create_unix_connection(protocol_factory, self.path, **kwargs)
+        return await loop.create_unix_connection(
+            protocol_factory, self.path, **kwargs
+        )
 
     def __str__(self) -> str:
         if self.is_ssl:
-            return "{} (ssl)".format(self.path)
+            return f"{self.path} (ssl)"
 
         return self.path
 
@@ -121,18 +148,13 @@ class Server(BasicIPServer):
     """Represents a server to connect to"""
 
     def __init__(
-        self, host: str, port: int, is_ssl: bool = False, password: str = None
+        self,
+        host: str,
+        port: int,
+        is_ssl: bool = False,
+        password: Optional[str] = None,
     ):
         super().__init__(host=host, port=port, is_ssl=is_ssl, password=password)
-
-
-class BadAttribute(AttributeError):
-    def __init__(self, obj, attr):
-        super().__init__(
-            "Incorrect base connection type ({} has no attribute {!r})".format(
-                type(obj).__name__, attr
-            )
-        )
 
 
 class ConnectedServer:
@@ -141,29 +163,15 @@ class ConnectedServer:
     Used to store session data like ISUPPORT tokens and enabled CAPs
     """
 
-    last_ping_sent = -1
-    last_ping_recv = -1
-    lag = -1
+    last_ping_sent: float = -1
+    last_ping_recv: float = -1
+    lag: float = -1
 
-    def __init__(self, server: 'BaseServer') -> None:
+    def __init__(self, server: "BaseServer") -> None:
         self.connection = server
         self.is_ssl = server.is_ssl
         self.password = server.password
-        self.isupport_tokens: Dict[str, str] = {}
+        self.isupport_tokens: Dict[str, Optional[str]] = {}
         self.caps: Dict[str, Tuple[Cap, Optional[bool]]] = {}
-        self.server_name = None
-        self.data = {}
-
-    @property
-    def host(self):
-        try:
-            return self.connection.host
-        except AttributeError as e:
-            raise BadAttribute(self.connection, e.args[0])
-
-    @property
-    def port(self):
-        try:
-            return self.connection.port
-        except AttributeError as e:
-            raise BadAttribute(self.connection, e.args[0])
+        self.server_name: Optional[str] = None
+        self.data: Dict[str, Any] = {}

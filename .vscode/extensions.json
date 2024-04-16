@@ -1,5 +1,15 @@
 {
     "recommendations": [
-        "github.vscode-pull-request-github"
+        "tamasfe.even-better-toml",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "EditorConfig.EditorConfig",
+        "GitHub.vscode-pull-request-github",
+        "github.vscode-github-actions",
+        "redhat.vscode-yaml",
+        "ms-python.black-formatter",
+        "ms-python.isort",
+        "ms-azuretools.vscode-docker",
+        "ms-python.mypy-type-checker"
     ]
 }

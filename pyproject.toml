@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
@@ -22,31 +22,68 @@ keywords = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "py-irclib",
+    "py-irclib>=0.4.0",
+    "typing_extensions",
 ]
 
 [project.urls]
 Homepage = "https://github.com/TotallyNotRobots/async-irc"
 
 [tool.hatch.version]
-path = "asyncirc/__init__.py"
+source = "vcs"
 
 [tool.hatch.build.targets.sdist]
-include = [
-    "/asyncirc",
-]
+exclude = ["/.github"]
 
 [tool.hatch.build.targets.wheel]
-packages = [
-    "asyncirc",
+packages = ["asyncirc"]
+
+[tool.hatch.env]
+requires = ["hatch-containers"]
+
+[tool.hatch.envs.default]
+dependencies = [
+    "coverage[toml]>=6.5",
+    "pytest>=6.0",
+    "pytest-asyncio",
+    "pre-commit",
+    "mypy>=1.8",
 ]
 
+[tool.hatch.envs.default.scripts]
+test = "pytest"
+test-cov = ["coverage run -pm pytest"]
+cov-report = [
+    "- coverage combine",
+    "coverage xml",
+    "coverage report --show-missing",
+]
+cov = ["- coverage erase", "test-cov", "cov-report"]
+cov-all = ["- coverage erase", "hatch run testall:test-cov", "cov-report"]
+
+setup-pre-commit = "python3 -m pre_commit install --install-hooks -t commit-msg -t pre-push -t pre-commit"
+setup-dev = ["setup-pre-commit"]
+
+pre-commit = "python3 -m pre_commit run {args:--all}"
+
+[tool.hatch.envs.testall]
+type = "container"
+dependencies = ["coverage[toml]>=6.5", "pytest>=6.0", "pytest-asyncio"]
+
+[[tool.hatch.envs.testall.matrix]]
+python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+
 [tool.isort]
+profile = "black"
 line_length = 80
-multi_line_output = 3
 include_trailing_comma = true
 use_parentheses = true
 known_first_party = ["asyncirc", "tests"]
@@ -54,48 +91,114 @@ float_to_top = true
 
 [tool.black]
 line-length = 80
-target-version = ['py38']
+target-version = ["py38"]
 include = '\.pyi?$'
-exclude = '''
-(
-  /(
-      \.eggs         # exclude a few common directories in the
-    | \.git          # root of the project
-    | \.hg
-    | \.mypy_cache
-    | \.tox
-    | \.venv
-    | _build
-    | buck-out
-    | build
-    | dist
-    | venv
-  )/
-)
-'''
 
-[tool.pylint.main]
-analyse-fallback-blocks = true
-py-version = "3.8"
+[tool.ruff]
+line-length = 80
+target-version = 'py38'
 
-[tool.pylint.messages_control]
-disable = [
+[tool.ruff.format]
+docstring-code-format = true
+line-ending = "lf"
+skip-magic-trailing-comma = true
+
+[tool.ruff.lint]
+ignore-init-module-imports = false
+extend-safe-fixes = [
+    "EM101",
+    "EM102",
+    "EM103",
+    "TCH001",
+    "SIM117",
+    "SIM108",
+    "ANN201",
+]
+ignore = [
+    "D",
+    "TRY003", # TODO(aspen): Switch to custom exceptions
+    "ANN101", # Due to be deprecated in ruff
+    "ANN102", # Due to be deprecated in ruff
+    "COM812", # Conflicts with formatter
+    "ISC001", # Conflicts with formatter
+    "EXE002", # pre-commit does it better, works with SMB shares
+    "FA100",
+]
+select = ["ALL"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = [
+    "PLR2004", # Allow "magic values" in tests -aspen
+    "S101",    # Allow asserts in tests
+    "SIM201",  # We need to test weird comparison operators
+    "SIM202",  # We need to test weird comparison operstors
+    "SIM300",  # We need to test both forward and reverse comparisons
+    "FBT001",  # Boolean parameters are fine for test cases
 ]
 
-enable = ["c-extension-no-member"]
+[tool.ruff.lint.pycodestyle]
+max-line-length = 100
 
-[tool.pylint.typecheck]
-generated-members = "(requests\\.)?codes\\.[a-zA-Z0-9_]+"
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
 
 [tool.mypy]
 namespace_packages = true
 python_version = "3.8"
 warn_unused_configs = true
-strict = false
-strict_optional = false
+strict = true
+strict_optional = true
 ignore_missing_imports = true
 check_untyped_defs = true
 show_error_codes = true
 warn_unused_ignores = true
+no_implicit_reexport = true
 warn_redundant_casts = true
-# strict_equality = true
+strict_equality = true
+disallow_any_generics = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_untyped_decorators = true
+extra_checks = true
+warn_unreachable = true
+warn_return_any = true
+warn_no_return = true
+enable_error_code = [
+    "redundant-self",
+    "redundant-expr",
+    "possibly-undefined",
+    "truthy-bool",
+    "truthy-iterable",
+    "ignore-without-code",
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--doctest-modules"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = ["error"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+[tool.coverage.run]
+branch = true
+relative_files = true
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "v$version"
+version_scheme = "semver"
+version_provider = "scm"
+update_changelog_on_bump = true
+major_version_zero = true

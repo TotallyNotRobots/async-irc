@@ -1,4 +1,5 @@
-def test_imports():
+async def test_imports() -> None:
     from asyncirc.protocol import IrcProtocol
 
-    proto = IrcProtocol([], '')
+    with IrcProtocol([], "") as proto:
+        assert not proto.connected

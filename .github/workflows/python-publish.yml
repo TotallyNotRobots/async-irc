@@ -1,6 +1,6 @@
-name: Publish Python 🐍 distribution 📦 to PyPI and TestPyPI
+name: Build and Publish
 
-on: push
+on: [push]
 
 jobs:
   build:
@@ -8,20 +8,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.x"
-      - name: Install pypa/build
+
+      - name: Install hatch
         run: >-
-          python3 -m
-          pip install
-          build
-          --user
+          python3 -m pip install --upgrade hatch --user
+
       - name: Build a binary wheel and a source tarball
-        run: python3 -m build
+        run: hatch build
+
       - name: Store the distribution packages
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: python-package-distributions
           path: dist/
@@ -34,14 +35,15 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/async-irc
+      url: https://pypi.org/p/asyncirc
     permissions:
       id-token: write # IMPORTANT: mandatory for trusted publishing
     steps:
       - name: Download all the dists
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: python-package-distributions
           path: dist/
+
       - name: Publish distribution 📦 to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

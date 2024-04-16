@@ -1,0 +1,43 @@
+name: Python tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.8'
+          - '3.9'
+          - '3.10'
+          - '3.11'
+          - '3.12'
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "${{matrix.python-version}}"
+        cache: "pip"
+
+    - name: Install Hatch
+      run: pip install --user --upgrade hatch
+
+    - name: Test with pytest
+      run: hatch run cov
+      env:
+        PYTHONDEVMODE: 1
+
+    - uses: codecov/codecov-action@v4
+      with:
+        name: "build-${{ matrix.python-version }}"
+        fail_ci_if_error: true
+      env:
+        CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}

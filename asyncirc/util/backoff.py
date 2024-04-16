@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 Provides a Delayer object for delaying repeated calls e.g. server connections
 """
@@ -7,7 +6,7 @@ import asyncio
 import random
 from typing import Any, Callable
 
-__all__ = ('AsyncDelayer',)
+__all__ = ("AsyncDelayer",)
 
 
 class AsyncDelayer:
@@ -35,14 +34,17 @@ class AsyncDelayer:
         self._rand.seed()
 
     @property
-    def randfunc(self) -> Callable:
-        return self._rand.randrange if self._integral else self._rand.uniform
+    def randfunc(self) -> Callable[[int, int], float]:
+        if self._integral:
+            return self._rand.randrange
 
-    async def __aenter__(self) -> 'AsyncDelayer':
+        return self._rand.uniform
+
+    async def __aenter__(self) -> "AsyncDelayer":
         self._exp = min(self._exp + 1, self._max)
-        wait = self.randfunc(0, self._base * (2 ** self._exp))
+        wait = self.randfunc(0, self._base * (2**self._exp))
         await asyncio.sleep(wait)
         return self
 
-    async def __aexit__(self, *exc: Any) -> bool:
+    async def __aexit__(self, *exc: Any) -> None:
         pass

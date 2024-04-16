@@ -1,83 +1,82 @@
-exclude: ^\.vscode/.*$
 repos:
-- repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: c4a0b883114b00d8d76b479c820ce7950211c99b  # frozen: v4.5.0
-  hooks:
-  - id: trailing-whitespace
-    args: ['--markdown-linebreak-ext=md,markdown']
+- hooks:
+  - args:
+    - --markdown-linebreak-ext=md,markdown
+    id: trailing-whitespace
   - id: end-of-file-fixer
   - id: check-yaml
   - id: check-added-large-files
   - id: check-ast
-  - id: check-byte-order-marker
+  - id: fix-byte-order-marker
   - id: check-merge-conflict
   - id: debug-statements
   - id: detect-private-key
-    exclude: tests/data/.*
   - id: check-builtin-literals
   - id: check-case-conflict
   - id: check-docstring-first
   - id: check-executables-have-shebangs
-  - id: check-json
-    exclude: '.devcontainer/.*'
-  - id: pretty-format-json
-    exclude: '.devcontainer/.*'
-    args:
+  - id: check-shebang-scripts-are-executable
+  - id: check-symlinks
+  - args:
+    - --fix=lf
+    id: mixed-line-ending
+  - exclude: ^\.(vscode|devcontainer)/
+    id: check-json
+  - args:
     - --indent
     - '4'
     - --autofix
     - --no-sort-keys
+    exclude: ^\.(vscode|devcontainer)/
+    id: pretty-format-json
   - id: check-toml
-  - id: fix-encoding-pragma
-    args:
-    - --remove
-- repo: https://github.com/psf/black
-  rev: 6fdf8a4af28071ed1d079c01122b34c5d587207a  # frozen: 24.2.0
-  hooks:
+  repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: 2c9f875913ee60ca25ce70243dc24d5b6415598c
+- hooks:
   - id: black
-- repo: https://github.com/pycqa/isort
-  rev: c235f5e450b4b84e58d114ed4c589cbf454175a3  # frozen: 5.13.2
-  hooks:
+  repo: https://github.com/psf/black
+  rev: 8fe627072f15ff2e3d380887b92f7868efaf6d05
+- hooks:
   - id: isort
-- repo: https://github.com/pre-commit/pygrep-hooks
-  rev: 3a6eb0fadf60b3cccfd80bad9dbb6fae7e47b316  # frozen: v1.10.0
-  hooks:
+  repo: https://github.com/pycqa/isort
+  rev: c235f5e450b4b84e58d114ed4c589cbf454175a3
+- hooks:
   - id: python-no-eval
   - id: python-no-log-warn
-- repo: https://github.com/asottile/pyupgrade
-  rev: df17dfa3911b81b4a27190b0eea5b1debc7ffa0a  # frozen: v3.15.1
-  hooks:
-  - id: pyupgrade
-    args:
-    - "--py38-plus"
-
-- repo: local
-  hooks:
-  - id: mypy
+  repo: https://github.com/pre-commit/pygrep-hooks
+  rev: 3a6eb0fadf60b3cccfd80bad9dbb6fae7e47b316
+- hooks:
+  - id: flynt
+  repo: https://github.com/ikamensh/flynt
+  rev: 651c822fdcf45fffcf9743dc755085f32acb65e3
+- hooks:
+  - args:
+    - --py38-plus
+    id: pyupgrade
+  repo: https://github.com/asottile/pyupgrade
+  rev: 12af25eb252deaaecb6b259df40d01f42e716dc3
+- hooks:
+  - additional_dependencies:
+    - tomli ; python_version < '3.11'
+    id: auto-walrus
+  repo: https://github.com/MarcoGorelli/auto-walrus
+  rev: 7855759486496a3248e9ff37dce7c6d57d39bfce
+- hooks:
+  - additional_dependencies:
+    - tomli ; python_version < '3.11'
+    id: codespell
+  repo: https://github.com/codespell-project/codespell
+  rev: 6e41aba91fb32e9feb741a6258eefeb9c6e4a482
+- hooks:
+  - id: commitizen
+  repo: https://github.com/commitizen-tools/commitizen
+  rev: 7c0bc1591103b1f089aab9810fc2a201ccb0552b
+- hooks:
+  - entry: hatch run python3 -m mypy
+    exclude: tests/.*
+    id: mypy
+    language: system
     name: mypy
-    entry: mypy
-    language: system
-    types: [python]
-  - id: pylint
-    name: pylint
-    entry: pylint
-    args:
-    - '-s'
-    - 'no'
-    language: system
-    types: [python]
-- repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
-  rev: 8d1b9cadaf854cb25bb0b0f5870e1cc66a083d6b  # frozen: 0.2.3
-  hooks:
-  - id: yamlfmt
-    args:
-    - --mapping
-    - '2'
-    - --sequence
-    - '2'
-    - --offset
-    - '0'
-    - --width
-    - '120'
-    - -e
-    - -p
+    types:
+    - python
+  repo: local
