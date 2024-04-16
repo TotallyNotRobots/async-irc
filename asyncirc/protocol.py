@@ -80,10 +80,11 @@ async def _internal_cap_handler(
         enabled = message.parameters[1] == "ACK"
         for cap in caplist:
             current = conn.server.caps[cap.name][0]
-            conn.server.caps[cap.name] = (current, enabled)
             if enabled:
                 handlers = filter(None, conn.cap_handlers[cap.name])
                 await asyncio.gather(*[func(conn, cap) for func in handlers])
+
+            conn.server.caps[cap.name] = (current, enabled)
 
         if all(val[1] is not None for val in conn.server.caps.values()):
             conn.send("CAP END")
@@ -149,7 +150,7 @@ async def _do_sasl(conn: "IrcProtocol", cap: Cap) -> None:
     auth_msg = await conn.wait_for("AUTHENTICATE", timeout=5)
     if auth_msg and auth_msg.parameters[0] == "+":
         auth_line = "+"
-        if conn.sasl_mech is SASLMechanism.PLAIN:
+        if conn.sasl_mech == SASLMechanism.PLAIN:
             if conn.sasl_auth is None:
                 msg = "You must specify sasl_auth when using SASL PLAIN"
                 raise ValueError(msg)
