@@ -9,16 +9,8 @@ description = "A simple asyncio.Protocol implementation designed for IRC"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.8"
-authors = [
-    { name = "linuxdaemon", email = "linuxdaemon@snoonet.org" },
-]
-keywords = [
-    "async-irc",
-    "asyncio",
-    "asyncirc",
-    "irc",
-    "irc-framework",
-]
+authors = [{ name = "linuxdaemon", email = "linuxdaemon.irc@gmail.com" }]
+keywords = ["async-irc", "asyncio", "asyncirc", "irc", "irc-framework"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: MIT License",
@@ -29,10 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-dependencies = [
-    "py-irclib>=0.4.0",
-    "typing_extensions",
-]
+dependencies = ["py-irclib>=0.4.0", "typing_extensions"]
 
 [project.urls]
 Homepage = "https://github.com/TotallyNotRobots/async-irc"
@@ -45,6 +34,9 @@ exclude = ["/.github"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["asyncirc"]
+
+[tool.hatch.build.hooks.vcs]
+version-file = "asyncirc/_version.py"
 
 [tool.hatch.env]
 requires = ["hatch-containers"]

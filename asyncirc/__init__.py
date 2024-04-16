@@ -2,6 +2,11 @@
 Async IRC Interface Library
 """
 
-__all__ = ("protocol", "server")
+from asyncirc._version import (
+    __version__,
+    __version_tuple__,
+    version,
+    version_tuple,
+)
 
-__version__ = "0.1.8"
+__all__ = ("version", "version_tuple", "__version__", "__version_tuple__")

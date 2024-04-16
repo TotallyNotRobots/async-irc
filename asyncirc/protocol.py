@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from asyncio import AbstractEventLoop, Transport
     from logging import Logger
 
-    from asyncirc.server import BaseServer, Server
+    from asyncirc.server import BaseServer
 
 
 __all__ = ("SASLMechanism", "IrcProtocol")
@@ -161,7 +161,7 @@ async def _do_sasl(conn: "IrcProtocol", cap: Cap) -> None:
 
         conn.send(f"AUTHENTICATE {auth_line}")
         # Wait for SASL to complete
-        # TODO log SASL response
+        # TODO(linuxdaemon): log SASL response
         await conn.wait_for(
             "902", "903", "904", "905", "906", "907", "908", timeout=30
         )
@@ -205,7 +205,7 @@ class IrcProtocol(Protocol):
 
     def __init__(
         self,
-        servers: Sequence["Server"],
+        servers: Sequence["BaseServer"],
         nick: str,
         user: Optional[str] = None,
         realname: Optional[str] = None,
@@ -344,10 +344,10 @@ class IrcProtocol(Protocol):
                 )
 
             return False
-        except (ConnectionError, socket.gaierror) as e:
+        except (ConnectionError, socket.gaierror):
             if self.logger:
                 self.logger.exception(
-                    "Error occurred while connecting to %s (%s)", self.server, e
+                    "Error occurred while connecting to %s", self.server
                 )
 
             return False

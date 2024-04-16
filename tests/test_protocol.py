@@ -61,8 +61,6 @@ class MockTransport(asyncio.Transport):
                 self._server.send_line(Message.parse(":irc.example.com 903"))
             elif msg.command == "QUIT":
                 self._protocol.connection_lost(None)
-            else:
-                print(f"unhandled command: {msg}")
 
             if not self._registered:
                 if (
@@ -99,9 +97,10 @@ class MockServer(BaseServer):
         )
         self.lines: List[Tuple[str, str]] = []
         self.in_buffer = b""
-        self.transport = None
+        self.transport: Optional[MockTransport] = None
 
-    def send_line(self, msg: Message):
+    def send_line(self, msg: Message) -> None:
+        assert self.transport is not None
         self.transport.get_protocol().data_received(str(msg).encode() + b"\r\n")
 
     async def connect(
@@ -118,9 +117,9 @@ class MockServer(BaseServer):
 
 
 async def test_sasl() -> None:
-    fut = asyncio.Future()
+    fut: "asyncio.Future[None]" = asyncio.Future()
 
-    async def _on_001(conn, msg):
+    async def _on_001(_conn: "IrcProtocol", _msg: "Message") -> None:
         fut.set_result(None)
 
     server = MockServer()

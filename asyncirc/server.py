@@ -29,7 +29,7 @@ class BaseServer:
         is_ssl: bool = False,
         ssl_ctx: Optional[ssl.SSLContext] = None,
         certpath: Optional[str] = None,
-    ):
+    ) -> None:
         if is_ssl:
             if ssl_ctx is None:
                 ssl_ctx = ssl.create_default_context()

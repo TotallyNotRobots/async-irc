@@ -175,3 +175,11 @@ Session.vim
 .netrwhist
 # auto-generated tag files
 tags
+
+asyncirc/_version.py
+
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+coverage.*
+.coverage.*
