@@ -4,7 +4,7 @@ Provides a Delayer object for delaying repeated calls e.g. server connections
 
 import asyncio
 import random
-from typing import Any, Callable
+from typing import Callable
 
 __all__ = ("AsyncDelayer",)
 
@@ -46,5 +46,5 @@ class AsyncDelayer:
         await asyncio.sleep(wait)
         return self
 
-    async def __aexit__(self, *exc: Any) -> None:
+    async def __aexit__(self, *exc: object) -> None:
         pass

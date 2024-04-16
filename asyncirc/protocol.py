@@ -13,8 +13,6 @@ from enum import IntEnum, auto, unique
 from itertools import cycle
 from typing import (
     TYPE_CHECKING,
-    Any,
-    AnyStr,
     Callable,
     Coroutine,
     Dict,
@@ -58,7 +56,8 @@ async def _internal_cap_handler(
     conn: "IrcProtocol", message: "Message"
 ) -> None:
     if conn.server is None:
-        raise ValueError("Server not set in handler")
+        msg = "Server not set in handler"
+        raise ValueError(msg)
 
     caplist: List[Cap] = []
     if len(message.parameters) > 2:
@@ -113,7 +112,8 @@ async def _internal_cap_handler(
 
 async def _internal_pong(conn: "IrcProtocol", msg: "Message") -> None:
     if conn.server is None:
-        raise ValueError("Server not set in handler")
+        err_msg = "Server not set in handler"
+        raise ValueError(err_msg)
 
     if msg.parameters[-1].startswith("LAG"):
         now = time.time()
@@ -125,7 +125,8 @@ async def _internal_pong(conn: "IrcProtocol", msg: "Message") -> None:
 
 async def _do_sasl(conn: "IrcProtocol", cap: Cap) -> None:
     if conn.server is None:
-        raise ValueError("Server not set in handler")
+        msg = "Server not set in handler"
+        raise ValueError(msg)
 
     if not conn.sasl_mech or conn.sasl_mech is SASLMechanism.NONE:
         return
@@ -150,12 +151,11 @@ async def _do_sasl(conn: "IrcProtocol", cap: Cap) -> None:
         auth_line = "+"
         if conn.sasl_mech is SASLMechanism.PLAIN:
             if conn.sasl_auth is None:
-                raise ValueError(
-                    "You must specify sasl_auth when using SASL PLAIN"
-                )
+                msg = "You must specify sasl_auth when using SASL PLAIN"
+                raise ValueError(msg)
 
             user, password = conn.sasl_auth
-            auth_line = "\0".join((user, user, password))
+            auth_line = f"{user}\x00{user}\x00{password}"
             auth_line = base64.b64encode(auth_line.encode()).decode()
 
         conn.send(f"AUTHENTICATE {auth_line}")
@@ -168,7 +168,8 @@ async def _do_sasl(conn: "IrcProtocol", cap: Cap) -> None:
 
 async def _isupport_handler(conn: "IrcProtocol", message: "Message") -> None:
     if conn.server is None:
-        raise ValueError("Server not set in handler")
+        msg = "Server not set in handler"
+        raise ValueError(msg)
 
     # Remove the nick and trailing ':are supported by this server' message
     tokens = message.parameters[1:-1]
@@ -182,10 +183,12 @@ async def _isupport_handler(conn: "IrcProtocol", message: "Message") -> None:
 
 async def _on_001(conn: "IrcProtocol", message: "Message") -> None:
     if conn.server is None:
-        raise ValueError("Server not set in handler")
+        msg = "Server not set in handler"
+        raise ValueError(msg)
 
     if not message.prefix:
-        raise ValueError(f"Missing prefix in 001: {message}")
+        msg = f"Missing prefix in 001: {message}"
+        raise ValueError(msg)
 
     conn.server.server_name = message.prefix.mask
 
@@ -222,7 +225,8 @@ class IrcProtocol(Protocol):
         self.loop = loop or asyncio.get_event_loop()
 
         if self.sasl_mech == SASLMechanism.PLAIN and self.sasl_auth is None:
-            raise ValueError("You must specify sasl_auth when using SASL PLAIN")
+            msg = "You must specify sasl_auth when using SASL PLAIN"
+            raise ValueError(msg)
 
         self.handlers: Dict[
             int,
@@ -265,7 +269,8 @@ class IrcProtocol(Protocol):
         while True:
             if self.connected:
                 if self.server is None:
-                    raise ValueError("Server not set in ping handler")
+                    msg = "Server not set in ping handler"
+                    raise ValueError(msg)
 
                 if self.server.lag > 60:
                     self.loop.create_task(self.connect())
@@ -284,7 +289,7 @@ class IrcProtocol(Protocol):
     async def __aenter__(self) -> "IrcProtocol":
         return self.__enter__()
 
-    async def __aexit__(self, *exc: Any) -> None:
+    async def __aexit__(self, *exc: object) -> None:
         if self.connected:
             self.quit()
             await self.quit_future
@@ -294,7 +299,7 @@ class IrcProtocol(Protocol):
     def __enter__(self) -> "IrcProtocol":
         return self
 
-    def __exit__(self, *exc: Any) -> None:
+    def __exit__(self, *exc: object) -> None:
         if self.connected:
             self.quit()
 
@@ -332,7 +337,7 @@ class IrcProtocol(Protocol):
             await asyncio.wait_for(fut, 30)
         except asyncio.TimeoutError:
             if self.logger:
-                self.logger.error(
+                self.logger.exception(
                     "Connection timeout occurred while connecting to %s",
                     self.server,
                 )
@@ -340,7 +345,7 @@ class IrcProtocol(Protocol):
             return False
         except (ConnectionError, socket.gaierror) as e:
             if self.logger:
-                self.logger.error(
+                self.logger.exception(
                     "Error occurred while connecting to %s (%s)", self.server, e
                 )
 
@@ -384,7 +389,7 @@ class IrcProtocol(Protocol):
     async def wait_for(
         self, *cmds: str, timeout: Optional[int] = None
     ) -> Optional[Message]:
-        """Wait for a specific command from the server, optionally returning after [timeout] seconds"""
+        """Wait for a specific command from the server, optionally returning after [timeout] seconds."""
         if not cmds:
             return None
 
@@ -428,7 +433,8 @@ class IrcProtocol(Protocol):
             self.logger.info(">> %s", text.decode())
 
         if self._transport is None:
-            raise ValueError("Can't send to missing transport")
+            msg = "Can't send to missing transport"
+            raise ValueError(msg)
 
         self._transport.write(text + b"\r\n")
 
@@ -444,7 +450,8 @@ class IrcProtocol(Protocol):
     def connection_made(self, transport: "asyncio.BaseTransport") -> None:
         """Called by the event loop when the connection has been established"""
         if not self.server:
-            raise ValueError("Server not set during connection_made()")
+            msg = "Server not set during connection_made()"
+            raise ValueError(msg)
 
         self._transport = cast(asyncio.Transport, transport)
         self._connected = True

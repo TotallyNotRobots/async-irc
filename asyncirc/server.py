@@ -5,9 +5,10 @@ to store contextual data
 
 import asyncio
 import ssl
-from typing import Any, Callable, Dict, Optional, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, TypeVar
 
-from irclib.parser import Cap
+if TYPE_CHECKING:
+    from irclib.parser import Cap
 
 __all__ = (
     "BaseServer",
@@ -153,7 +154,7 @@ class Server(BasicIPServer):
         port: int,
         is_ssl: bool = False,
         password: Optional[str] = None,
-    ):
+    ) -> None:
         super().__init__(host=host, port=port, is_ssl=is_ssl, password=password)
 
 
