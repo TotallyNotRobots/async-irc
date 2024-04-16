@@ -1,4 +1,8 @@
-## Unreleased
+## v0.1.9 (2024-04-16)
+
+### Refactor
+
+- sync configs and clean typings and tests
 
 ## v0.1.8 (2024-03-29)
 
