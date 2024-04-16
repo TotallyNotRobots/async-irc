@@ -1,3 +1,17 @@
+## v0.2.0 (2024-04-16)
+
+### Feat
+
+- add py.typed to mark entire package as typed
+
+### Fix
+
+- **protocol.py**: correct cap negotiation flow
+
+### Refactor
+
+- cleanup additional errors from hatch fmt
+
 ## v0.1.9 (2024-04-16)
 
 ### Refactor
