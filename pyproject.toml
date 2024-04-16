@@ -140,13 +140,17 @@ split-on-trailing-comma = false
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
 
+[tool.flynt]
+aggressive = true
+transform-joins = true
+transform-concats = true
+
 [tool.mypy]
 namespace_packages = true
 python_version = "3.8"
 warn_unused_configs = true
 strict = true
 strict_optional = true
-ignore_missing_imports = true
 check_untyped_defs = true
 show_error_codes = true
 warn_unused_ignores = true
