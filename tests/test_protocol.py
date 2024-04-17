@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import ssl
 from ssl import SSLContext
 from typing import Any, Callable, List, Mapping, Optional, Tuple, TypeVar
 
@@ -25,6 +26,7 @@ class MockTransport(asyncio.Transport):
         self._received_cap_ls = False
         self._received_nick = False
         self._received_cap_end = False
+        self._did_ping = False
         self._registered = False
 
     def write(self, data: bytes) -> None:
@@ -61,20 +63,23 @@ class MockTransport(asyncio.Transport):
                 self._server.send_line(Message.parse(":irc.example.com 903"))
             elif msg.command == "QUIT":
                 self._protocol.connection_lost(None)
+            elif msg.command == "PONG":
+                self._did_ping = True
 
-            if not self._registered:
-                if (
-                    self._received_nick
-                    and self._received_user
-                    and (not self._received_cap_ls or self._received_cap_end)
-                ):
+            if not self._registered and (
+                self._received_nick
+                and self._received_user
+                and (not self._received_cap_ls or self._received_cap_end)
+            ):
+                if self._did_ping:
                     self._registered = True
                     self._server.send_line(
                         Message.parse(":irc.example.com 001")
                     )
-
-    def set_protocol(self, protocol: asyncio.BaseProtocol) -> None:
-        self._protocol = protocol
+                else:
+                    self._server.send_line(
+                        Message.parse(":irc.example.com PING foobar")
+                    )
 
     def get_protocol(self) -> asyncio.BaseProtocol:
         return self._protocol
@@ -108,7 +113,7 @@ class MockServer(BaseServer):
         protocol_factory: Callable[[], _ProtoT],
         *,
         loop: Optional[asyncio.AbstractEventLoop] = None,
-        **kwargs: Any,
+        ssl: Optional[ssl.SSLContext] = None,
     ) -> Tuple[asyncio.Transport, _ProtoT]:
         proto = protocol_factory()
         self.transport = MockTransport(self, proto)
@@ -178,6 +183,7 @@ async def test_sasl() -> None:
             "in",
             "CAP END",
         ),
+        ("in", "PONG foobar"),
         (
             "in",
             "QUIT",

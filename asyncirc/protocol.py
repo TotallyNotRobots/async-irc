@@ -52,6 +52,78 @@ async def _internal_ping(conn: "IrcProtocol", message: "Message") -> None:
     conn.send(f"PONG {message.parameters}")
 
 
+def _handle_cap_list(conn: "IrcProtocol", caplist: "List[Cap]") -> None:
+    if conn.logger:
+        conn.logger.info("Current Capabilities: %s", caplist)
+
+
+def _handle_cap_del(
+    conn: "IrcProtocol", caplist: "List[Cap]", server: "ConnectedServer"
+) -> None:
+    if conn.logger:
+        conn.logger.info("Capabilities removed: %s", caplist)
+
+    for cap in caplist:
+        current = server.caps[cap.name][0]
+        server.caps[cap.name] = (current, False)
+
+
+def _handle_cap_new(
+    conn: "IrcProtocol",
+    message: "Message",
+    caplist: "List[Cap]",
+    server: "ConnectedServer",
+) -> None:
+    if conn.logger:
+        conn.logger.info("New capabilities advertised: %s", caplist)
+
+    for cap in caplist:
+        if cap.name in conn.cap_handlers:
+            server.caps[cap.name] = (cap, None)
+
+    if message.parameters[2] != "*":
+        for cap_name in server.caps:
+            conn.send(f"CAP REQ :{cap_name}")
+
+
+async def _handle_cap_reply(
+    conn: "IrcProtocol",
+    message: "Message",
+    caplist: "List[Cap]",
+    server: "ConnectedServer",
+) -> None:
+    enabled = message.parameters[1] == "ACK"
+    for cap in caplist:
+        current = server.caps[cap.name][0]
+        if enabled:
+            handlers = filter(None, conn.cap_handlers[cap.name])
+            await asyncio.gather(*[func(conn, cap) for func in handlers])
+
+        server.caps[cap.name] = (current, enabled)
+
+    if all(val[1] is not None for val in server.caps.values()):
+        conn.send("CAP END")
+
+
+def _handle_cap_ls(
+    conn: "IrcProtocol",
+    message: "Message",
+    caplist: "List[Cap]",
+    server: "ConnectedServer",
+) -> None:
+    for cap in caplist:
+        if cap.name in conn.cap_handlers:
+            server.caps[cap.name] = (cap, None)
+
+    if message.parameters[2] != "*":
+        for cap_name in server.caps:
+            conn.send(f"CAP REQ :{cap_name}")
+
+        if not server.caps:
+            # We haven't requested any CAPs, send a CAP END to end negotiation
+            conn.send("CAP END")
+
+
 async def _internal_cap_handler(
     conn: "IrcProtocol", message: "Message"
 ) -> None:
@@ -64,51 +136,15 @@ async def _internal_cap_handler(
         caplist = CapList.parse(message.parameters[-1])
 
     if message.parameters[1] == "LS":
-        for cap in caplist:
-            if cap.name in conn.cap_handlers:
-                conn.server.caps[cap.name] = (cap, None)
-
-        if message.parameters[2] != "*":
-            for cap_name in conn.server.caps:
-                conn.send(f"CAP REQ :{cap_name}")
-
-            if not conn.server.caps:
-                # We haven't request any CAPs, send a CAP END to end negotiation
-                conn.send("CAP END")
-
+        _handle_cap_ls(conn, message, caplist, conn.server)
     elif message.parameters[1] in ("ACK", "NAK"):
-        enabled = message.parameters[1] == "ACK"
-        for cap in caplist:
-            current = conn.server.caps[cap.name][0]
-            if enabled:
-                handlers = filter(None, conn.cap_handlers[cap.name])
-                await asyncio.gather(*[func(conn, cap) for func in handlers])
-
-            conn.server.caps[cap.name] = (current, enabled)
-
-        if all(val[1] is not None for val in conn.server.caps.values()):
-            conn.send("CAP END")
+        await _handle_cap_reply(conn, message, caplist, conn.server)
     elif message.parameters[1] == "LIST":
-        if conn.logger:
-            conn.logger.info("Current Capabilities: %s", caplist)
+        _handle_cap_list(conn, caplist)
     elif message.parameters[1] == "NEW":
-        if conn.logger:
-            conn.logger.info("New capabilities advertised: %s", caplist)
-
-        for cap in caplist:
-            if cap.name in conn.cap_handlers:
-                conn.server.caps[cap.name] = (cap, None)
-
-        if message.parameters[2] != "*":
-            for cap_name in conn.server.caps:
-                conn.send(f"CAP REQ :{cap_name}")
+        _handle_cap_new(conn, message, caplist, conn.server)
     elif message.parameters[1] == "DEL":
-        if conn.logger:
-            conn.logger.info("Capabilities removed: %s", caplist)
-
-        for cap in caplist:
-            current = conn.server.caps[cap.name][0]
-            conn.server.caps[cap.name] = (current, False)
+        _handle_cap_del(conn, caplist, conn.server)
 
 
 async def _internal_pong(conn: "IrcProtocol", msg: "Message") -> None:
@@ -280,32 +316,6 @@ class IrcProtocol(Protocol):
 
             await asyncio.sleep(30)
 
-    def __call__(self) -> "IrcProtocol":
-        """
-        This is here to allow an instance of IrcProtocol to be passed
-        directly to AbstractEventLoop.create_connection()
-        """
-        return self
-
-    async def __aenter__(self) -> "IrcProtocol":
-        return self.__enter__()
-
-    async def __aexit__(self, *exc: object) -> None:
-        if self.connected:
-            self.quit()
-            await self.quit_future
-
-        self.close()
-
-    def __enter__(self) -> "IrcProtocol":
-        return self
-
-    def __exit__(self, *exc: object) -> None:
-        if self.connected:
-            self.quit()
-
-        self.close()
-
     def close(self) -> None:
         if (
             self._pinger
@@ -314,14 +324,6 @@ class IrcProtocol(Protocol):
         ):
             self._pinger.cancel()
             self._pinger = None
-
-    async def connect(self) -> None:
-        """Attempt to connect to the server, cycling through the server list until successful"""
-        delayer = AsyncDelayer(2)
-        for server in cycle(self.servers):
-            async with delayer:
-                if await self._connect(server):
-                    break
 
     async def _connect(self, server: "BaseServer") -> bool:
         self._connected_future = self.loop.create_future()
@@ -354,6 +356,14 @@ class IrcProtocol(Protocol):
 
         return True
 
+    async def connect(self) -> None:
+        """Attempt to connect to the server, cycling through the server list until successful"""
+        delayer = AsyncDelayer(2)
+        for server in cycle(self.servers):
+            async with delayer:
+                if await self._connect(server):
+                    break
+
     def register(
         self,
         cmd: str,
@@ -382,22 +392,24 @@ class IrcProtocol(Protocol):
     ) -> None:
         """Register a CAP handler
 
-        If the handler is None, the CAP will be requested from the server, but no handler will be called,
-        allowing registration of CAPs that only require basic requests
+        If the handler is None, the CAP will be requested from the server,
+        but no handler will be called, allowing registration of CAPs that
+        only require basic requests
         """
         self.cap_handlers[cap].append(handler)
 
     async def wait_for(
         self, *cmds: str, timeout: Optional[int] = None
     ) -> Optional[Message]:
-        """Wait for a specific command from the server, optionally returning after [timeout] seconds."""
+        """
+        Wait for a specific command from the server, optionally returning after [timeout] seconds.
+        """
         if not cmds:
             return None
 
         fut: "asyncio.Future[Message]" = self.loop.create_future()
 
-        # noinspection PyUnusedLocal
-        async def _wait(conn: "IrcProtocol", message: "Message") -> None:
+        async def _wait(_conn: "IrcProtocol", message: "Message") -> None:
             if not fut.done():
                 fut.set_result(message)
 
@@ -412,14 +424,6 @@ class IrcProtocol(Protocol):
                 self.unregister(hook_id)
 
         return result
-
-    def send(self, text: Union[str, bytes]) -> None:
-        """Send a raw line to the server"""
-        asyncio.run_coroutine_threadsafe(self._send(text), self.loop)
-
-    def send_command(self, msg: Message) -> None:
-        """Send an irclib Message object to the server"""
-        return self.send(str(msg))
 
     async def _send(self, text: Union[str, bytes]) -> None:
         if not self.connected:
@@ -438,6 +442,14 @@ class IrcProtocol(Protocol):
             raise ValueError(msg)
 
         self._transport.write(text + b"\r\n")
+
+    def send(self, text: Union[str, bytes]) -> None:
+        """Send a raw line to the server"""
+        asyncio.run_coroutine_threadsafe(self._send(text), self.loop)
+
+    def send_command(self, msg: Message) -> None:
+        """Send an irclib Message object to the server"""
+        return self.send(str(msg))
 
     def quit(self, reason: Optional[str] = None) -> None:
         """Quit the IRC connection with an optional reason"""
@@ -470,6 +482,13 @@ class IrcProtocol(Protocol):
         self._transport = None
         self._connected = False
         if not self._quitting:
+            if self.logger and exc:
+                self.logger.error(
+                    "Error occurred in connection to %s",
+                    self.server,
+                    exc_info=exc,
+                )
+
             self._connected_future = self.loop.create_future()
             asyncio.run_coroutine_threadsafe(self.connect(), self.loop)
         else:
@@ -512,3 +531,29 @@ class IrcProtocol(Protocol):
     def server(self) -> Optional["ConnectedServer"]:
         """The current server object"""
         return self._server
+
+    def __call__(self) -> "IrcProtocol":
+        """
+        This is here to allow an instance of IrcProtocol to be passed
+        directly to AbstractEventLoop.create_connection()
+        """
+        return self
+
+    def __enter__(self) -> "IrcProtocol":
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        if self.connected:
+            self.quit()
+
+        self.close()
+
+    async def __aenter__(self) -> "IrcProtocol":
+        return self.__enter__()
+
+    async def __aexit__(self, *exc: object) -> None:
+        if self.connected:
+            self.quit()
+            await self.quit_future
+
+        self.close()

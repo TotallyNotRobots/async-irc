@@ -32,6 +32,10 @@ repos:
   - id: check-toml
   repo: https://github.com/pre-commit/pre-commit-hooks
   rev: 2c9f875913ee60ca25ce70243dc24d5b6415598c
+- repo: https://github.com/bwhmather/ssort
+  rev: dcb59fdb9b46ed1bb8e6ca2107e35f76cdc9c97e  # frozen: 0.12.4
+  hooks:
+  - id: ssort
 - hooks:
   - id: black
   repo: https://github.com/psf/black

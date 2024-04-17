@@ -5,6 +5,7 @@ to store contextual data
 
 import asyncio
 import ssl
+import warnings
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, TypeVar
 
 if TYPE_CHECKING:
@@ -52,7 +53,7 @@ class BaseServer:
         protocol_factory: Callable[[], _ProtoT],
         *,
         loop: Optional[asyncio.AbstractEventLoop] = None,
-        **kwargs: Any,
+        ssl: Optional[ssl.SSLContext] = None,
     ) -> Tuple[asyncio.Transport, _ProtoT]:
         raise NotImplementedError
 
@@ -93,13 +94,13 @@ class BasicIPServer(BaseServer):
         protocol_factory: Callable[[], _ProtoT],
         *,
         loop: Optional[asyncio.AbstractEventLoop] = None,
-        **kwargs: Any,
+        ssl: Optional[ssl.SSLContext] = None,
     ) -> Tuple[asyncio.Transport, _ProtoT]:
         if loop is None:
             loop = asyncio.get_event_loop()
 
         return await loop.create_connection(
-            protocol_factory, self.host, self.port, **kwargs
+            protocol_factory, self.host, self.port, ssl=ssl
         )
 
     def __str__(self) -> str:
@@ -122,6 +123,7 @@ class BasicUNIXServer(BaseServer):
         super().__init__(
             is_ssl=is_ssl, password=password, ssl_ctx=ssl_ctx, certpath=certpath
         )
+
         self.path = path
 
     async def connect(
@@ -129,13 +131,13 @@ class BasicUNIXServer(BaseServer):
         protocol_factory: Callable[[], _ProtoT],
         *,
         loop: Optional[asyncio.AbstractEventLoop] = None,
-        **kwargs: Any,
+        ssl: Optional[ssl.SSLContext] = None,
     ) -> Tuple[asyncio.Transport, _ProtoT]:
         if loop is None:
             loop = asyncio.get_event_loop()
 
         return await loop.create_unix_connection(
-            protocol_factory, self.path, **kwargs
+            protocol_factory, self.path, ssl=ssl
         )
 
     def __str__(self) -> str:
@@ -155,6 +157,11 @@ class Server(BasicIPServer):
         is_ssl: bool = False,
         password: Optional[str] = None,
     ) -> None:
+        warnings.warn(
+            "Server() is deprecated in favor of BasicIPServer()",
+            DeprecationWarning,
+            stacklevel=1,
+        )
         super().__init__(host=host, port=port, is_ssl=is_ssl, password=password)
 
 
