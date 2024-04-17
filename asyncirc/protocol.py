@@ -14,6 +14,7 @@ from typing import (
     Callable,
     Coroutine,
     Dict,
+    Final,
     List,
     Optional,
     Sequence,
@@ -44,6 +45,9 @@ class SASLMechanism(IntEnum):
     NONE = auto()
     PLAIN = auto()
     EXTERNAL = auto()
+
+
+_CAP_LIST_MIN_PARAMS: Final = 3  # CAP <subcmd> :a b c
 
 
 async def _internal_ping(conn: "IrcProtocol", message: "Message") -> None:
@@ -130,7 +134,7 @@ async def _internal_cap_handler(
         raise ValueError(msg)
 
     caplist: List[Cap] = []
-    if len(message.parameters) > 2:
+    if len(message.parameters) > (_CAP_LIST_MIN_PARAMS - 1):
         caplist = CapList.parse(message.parameters[-1])
 
     if message.parameters[1] == "LS":
@@ -248,6 +252,8 @@ class IrcProtocol(Protocol):
         sasl_mech: Optional[SASLMechanism] = None,
         logger: Optional["Logger"] = None,
         loop: Optional["AbstractEventLoop"] = None,
+        *,
+        max_lag: float = 60,
     ) -> None:
         """Create protocol for IRC connection.
 
@@ -275,6 +281,7 @@ class IrcProtocol(Protocol):
         self.sasl_mech = SASLMechanism(sasl_mech or SASLMechanism.NONE)
         self.logger = logger
         self.loop = loop or asyncio.get_event_loop()
+        self.max_lag = max_lag
 
         if self.sasl_mech == SASLMechanism.PLAIN and self.sasl_auth is None:
             msg = "You must specify sasl_auth when using SASL PLAIN"
@@ -333,7 +340,7 @@ class IrcProtocol(Protocol):
                     msg = "Server not set in ping handler"
                     raise ValueError(msg)
 
-                if self.server.lag > 60:
+                if self.server.lag > self.max_lag:
                     self.loop.create_task(self.connect())
                 else:
                     self.send(f"PING :LAG{time.time()}")
