@@ -108,9 +108,10 @@ extend-safe-fixes = [
     "SIM117",
     "SIM108",
     "ANN201",
+    "D415",
+    "D200",
 ]
 ignore = [
-    "D",
     "TRY003", # TODO(aspen): Switch to custom exceptions
     "ANN101", # Due to be deprecated in ruff
     "ANN102", # Due to be deprecated in ruff
@@ -138,7 +139,7 @@ max-line-length = 100
 split-on-trailing-comma = false
 
 [tool.ruff.lint.pydocstyle]
-convention = "pep257"
+convention = "google"
 
 [tool.flynt]
 aggressive = true

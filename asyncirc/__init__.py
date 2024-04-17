@@ -1,6 +1,4 @@
-"""
-Async IRC Interface Library
-"""
+"""Async IRC Interface Library."""
 
 from asyncirc._version import (
     __version__,

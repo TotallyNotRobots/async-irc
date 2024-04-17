@@ -38,7 +38,8 @@
                 "ms-python.black-formatter",
                 "ms-python.isort",
                 "ms-azuretools.vscode-docker",
-                "ms-python.mypy-type-checker"
+                "ms-python.mypy-type-checker",
+                "sunipkm.autodocstringpy"
             ],
             "settings": {
                 "python.defaultInterpreterPath": "~/.virtualenvs/async-irc/bin/python",

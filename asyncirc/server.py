@@ -1,7 +1,4 @@
-"""
-Server objects used for different stages in the connect process
-to store contextual data
-"""
+"""Server objects used for different stages in the connect process to store contextual data."""
 
 import asyncio
 import ssl
@@ -23,6 +20,8 @@ _ProtoT = TypeVar("_ProtoT", bound=asyncio.Protocol)
 
 
 class BaseServer:
+    """Abstract server specification to store connect information and session data."""
+
     def __init__(
         self,
         *,
@@ -31,6 +30,14 @@ class BaseServer:
         ssl_ctx: Optional[ssl.SSLContext] = None,
         certpath: Optional[str] = None,
     ) -> None:
+        """Set server connection options.
+
+        Args:
+            password: Server password to use. Defaults to None.
+            is_ssl: Whether to use TLS. Defaults to False.
+            ssl_ctx: Optional SSLContext to use. Defaults to None.
+            certpath: Client cert path to read. Defaults to None.
+        """
         if is_ssl:
             if ssl_ctx is None:
                 ssl_ctx = ssl.create_default_context()
@@ -46,6 +53,7 @@ class BaseServer:
 
     @property
     def is_ssl(self) -> bool:
+        """Whether this connection uses TLS."""
         return self.ssl_ctx is not None
 
     async def connect(
@@ -55,6 +63,19 @@ class BaseServer:
         loop: Optional[asyncio.AbstractEventLoop] = None,
         ssl: Optional[ssl.SSLContext] = None,
     ) -> Tuple[asyncio.Transport, _ProtoT]:
+        """Internal connect implementation.
+
+        This should not be called outside of `BaseServer`.
+
+        Args:
+            protocol_factory: Factory function that returns an `asyncio.Protocol` implementation.
+            loop: Asyncio event loop to use. Defaults to None.
+            ssl: SSLContext to use. Defaults to None.
+
+        Returns:
+            Tuple of the created `asyncio.Transport`
+            and the protocol returned from `protocol_factory`.
+        """
         raise NotImplementedError
 
     async def do_connect(
@@ -63,14 +84,24 @@ class BaseServer:
         *,
         loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> Tuple[asyncio.Transport, _ProtoT]:
+        """Wrapper for internal connect implementation.
+
+        Args:
+            protocol_factory: Factory that returns a asyncio.Protocol implementation.
+            loop: Asyncio loop to use. Defaults to None.
+
+        Returns:
+            Tuple of transport and protocol.
+        """
         return await self.connect(protocol_factory, loop=loop, ssl=self.ssl_ctx)
 
     def __str__(self) -> str:
+        """Describe server configuration."""
         raise NotImplementedError
 
 
 class BasicIPServer(BaseServer):
-    """A simple implementation for connecting to a normal TCP server"""
+    """A simple implementation for connecting to a normal TCP server."""
 
     def __init__(
         self,
@@ -82,6 +113,16 @@ class BasicIPServer(BaseServer):
         ssl_ctx: Optional[ssl.SSLContext] = None,
         certpath: Optional[str] = None,
     ) -> None:
+        """Create TCP server configuration.
+
+        Args:
+            host: Hostname
+            port: Port
+            is_ssl: Whether to use TLS. Defaults to False.
+            password: Server password. Defaults to None.
+            ssl_ctx: SSLContext to use. Defaults to None.
+            certpath: Path to client cert to use. Defaults to None.
+        """
         super().__init__(
             password=password, is_ssl=is_ssl, ssl_ctx=ssl_ctx, certpath=certpath
         )
@@ -96,6 +137,16 @@ class BasicIPServer(BaseServer):
         loop: Optional[asyncio.AbstractEventLoop] = None,
         ssl: Optional[ssl.SSLContext] = None,
     ) -> Tuple[asyncio.Transport, _ProtoT]:
+        """TCP server connection implementation.
+
+        Args:
+            protocol_factory: Factory to return asyncio.Protocol to use.
+            loop: Asyncio loop to use. Defaults to None.
+            ssl: SSLContext to use. Defaults to None.
+
+        Returns:
+            Tuple of transport and protocol
+        """
         if loop is None:
             loop = asyncio.get_event_loop()
 
@@ -104,6 +155,7 @@ class BasicIPServer(BaseServer):
         )
 
     def __str__(self) -> str:
+        """Describe TCP server configuration."""
         if self.is_ssl:
             return f"{self.host}:+{self.port}"
 
@@ -111,6 +163,8 @@ class BasicIPServer(BaseServer):
 
 
 class BasicUNIXServer(BaseServer):
+    """Server implementation for unix-socket based connections."""
+
     def __init__(
         self,
         *,
@@ -120,6 +174,15 @@ class BasicUNIXServer(BaseServer):
         ssl_ctx: Optional[ssl.SSLContext] = None,
         certpath: Optional[str] = None,
     ) -> None:
+        """Configure UNIX socket based server connection.
+
+        Args:
+            path: Path to socket.
+            is_ssl: Whether to use TLS. Defaults to False.
+            password: Server password. Defaults to None.
+            ssl_ctx: SSLContext to use. Defaults to None.
+            certpath: Path to client cert to use. Defaults to None.
+        """
         super().__init__(
             is_ssl=is_ssl, password=password, ssl_ctx=ssl_ctx, certpath=certpath
         )
@@ -133,6 +196,16 @@ class BasicUNIXServer(BaseServer):
         loop: Optional[asyncio.AbstractEventLoop] = None,
         ssl: Optional[ssl.SSLContext] = None,
     ) -> Tuple[asyncio.Transport, _ProtoT]:
+        """Connect to UNIX socket.
+
+        Args:
+            protocol_factory: Factory which returns an asyncio.Protocol implementation.
+            loop: Asyncio loop to use. Defaults to None.
+            ssl: SSLContext to use. Defaults to None.
+
+        Returns:
+            Tuple of transport and protocol.
+        """
         if loop is None:
             loop = asyncio.get_event_loop()
 
@@ -141,6 +214,7 @@ class BasicUNIXServer(BaseServer):
         )
 
     def __str__(self) -> str:
+        """Describe UNIX socket connection."""
         if self.is_ssl:
             return f"{self.path} (ssl)"
 
@@ -148,7 +222,7 @@ class BasicUNIXServer(BaseServer):
 
 
 class Server(BasicIPServer):
-    """Represents a server to connect to"""
+    """Represents a server to connect to."""
 
     def __init__(
         self,
@@ -157,6 +231,16 @@ class Server(BasicIPServer):
         is_ssl: bool = False,
         password: Optional[str] = None,
     ) -> None:
+        """Create basic server configuration.
+
+        This is deprecated in favor of BasicIPServer().
+
+        Args:
+            host: Server hostname
+            port: Server port
+            is_ssl: Whetner to use TLS. Defaults to False.
+            password: Server password. Defaults to None.
+        """
         warnings.warn(
             "Server() is deprecated in favor of BasicIPServer()",
             DeprecationWarning,
@@ -166,7 +250,7 @@ class Server(BasicIPServer):
 
 
 class ConnectedServer:
-    """Represents a connected server
+    """Represents a connected server.
 
     Used to store session data like ISUPPORT tokens and enabled CAPs
     """
@@ -176,6 +260,11 @@ class ConnectedServer:
     lag: float = -1
 
     def __init__(self, server: "BaseServer") -> None:
+        """Create session data.
+
+        Args:
+            server: Server connection configuration
+        """
         self.connection = server
         self.is_ssl = server.is_ssl
         self.password = server.password

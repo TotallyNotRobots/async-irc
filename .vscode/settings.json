@@ -11,5 +11,7 @@
         "editor.wordBasedSuggestions": "off",
         "editor.defaultFormatter": "ms-python.black-formatter"
     },
-    "python.analysis.diagnosticMode": "workspace"
+    "python.analysis.diagnosticMode": "workspace",
+    "autoDocstringPy.docstringFormat": "google-notypes",
+    "autoDocstringPy.startOnNewLine": true
 }

@@ -1,3 +1,5 @@
+"""Test protocol implementations."""
+
 import asyncio
 import logging
 import ssl
@@ -11,12 +13,23 @@ from asyncirc.server import BaseServer
 
 
 class MockTransport(asyncio.Transport):
+    """Mock transport implementation."""
+
     def __init__(
         self,
         server: "MockServer",
         protocol: asyncio.BaseProtocol,
         extra: Optional[Mapping[str, Any]] = None,
     ) -> None:
+        """Create mock transport for testing.
+
+        Args:
+            server: Server configuration.
+            protocol: protocol implementation.
+            loop: Asyncio loop to use.
+            ssl: SSLContext to use.
+            extra: Extra transport data. Defaults to None.
+        """
         super().__init__(extra)
         self._server = server
         self._protocol = protocol
@@ -30,6 +43,13 @@ class MockTransport(asyncio.Transport):
         self._registered = False
 
     def write(self, data: bytes) -> None:
+        """'Write data to the server.
+
+        This just handles the incoming data and sends responses directly to the Protocol.
+
+        Args:
+            data: Data to send
+        """
         self._protocol.logger.info(data)
         self._write_buffer += data
         while b"\r\n" in self._write_buffer:
@@ -82,6 +102,7 @@ class MockTransport(asyncio.Transport):
                     )
 
     def get_protocol(self) -> asyncio.BaseProtocol:
+        """Get current protocol."""
         return self._protocol
 
 
@@ -89,6 +110,8 @@ _ProtoT = TypeVar("_ProtoT", bound=asyncio.Protocol)
 
 
 class MockServer(BaseServer):
+    """Mock server implementation for testing."""
+
     def __init__(
         self,
         *,
@@ -97,6 +120,14 @@ class MockServer(BaseServer):
         ssl_ctx: Optional[SSLContext] = None,
         certpath: Optional[str] = None,
     ) -> None:
+        """Configure mock server.
+
+        Args:
+            password: Server password. Defaults to None.
+            is_ssl: Whether to use TLS. Defaults to False.
+            ssl_ctx: SSLContext to use. Defaults to None.
+            certpath: Path to client cert to use. Defaults to None.
+        """
         super().__init__(
             password=password, is_ssl=is_ssl, ssl_ctx=ssl_ctx, certpath=certpath
         )
@@ -105,6 +136,11 @@ class MockServer(BaseServer):
         self.transport: Optional[MockTransport] = None
 
     def send_line(self, msg: Message) -> None:
+        """Send line back to client.
+
+        Args:
+            msg: Message to send to client.
+        """
         assert self.transport is not None
         self.transport.get_protocol().data_received(str(msg).encode() + b"\r\n")
 
@@ -115,6 +151,16 @@ class MockServer(BaseServer):
         loop: Optional[asyncio.AbstractEventLoop] = None,
         ssl: Optional[ssl.SSLContext] = None,
     ) -> Tuple[asyncio.Transport, _ProtoT]:
+        """Mock connection implementation.
+
+        Args:
+            protocol_factory: Factory for mock protocol.
+            loop: Asyncio loop to use. Defaults to None.
+            ssl: SSLContext to use. Defaults to None.
+
+        Returns:
+            Tuple of transport and protocol.
+        """
         proto = protocol_factory()
         self.transport = MockTransport(self, proto)
         proto.connection_made(self.transport)
@@ -122,6 +168,7 @@ class MockServer(BaseServer):
 
 
 async def test_sasl() -> None:
+    """Test sasl flow."""
     fut: "asyncio.Future[None]" = asyncio.Future()
 
     async def _on_001(_conn: "IrcProtocol", _msg: "Message") -> None:
