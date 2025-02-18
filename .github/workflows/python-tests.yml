@@ -35,7 +35,7 @@ jobs:
       env:
         PYTHONDEVMODE: 1
 
-    - uses: codecov/codecov-action@v4
+    - uses: codecov/codecov-action@v5
       with:
         name: "build-${{ matrix.python-version }}"
         fail_ci_if_error: true
