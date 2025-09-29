@@ -172,6 +172,7 @@ async def test_sasl() -> None:
     fut: "asyncio.Future[None]" = asyncio.Future()
 
     async def _on_001(_conn: "IrcProtocol", _msg: "Message") -> None:
+        _conn.send_command("PRIVMSG #foo :bar")
         fut.set_result(None)
 
     server = MockServer()
@@ -231,6 +232,7 @@ async def test_sasl() -> None:
             "CAP END",
         ),
         ("in", "PONG foobar"),
+        ("in", "PRIVMSG #foo :bar"),
         (
             "in",
             "QUIT",
