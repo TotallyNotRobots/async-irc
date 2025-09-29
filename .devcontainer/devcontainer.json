@@ -6,7 +6,7 @@
     "dockerFile": "./Dockerfile",
     "context": "..",
     "features": {
-        "ghcr.io/devcontainers-contrib/features/zsh-plugins": {
+        "ghcr.io/devcontainers-extra/features/zsh-plugins": {
             "omzPlugins": "https://github.com/zsh-users/zsh-autosuggestions"
         },
         "ghcr.io/devcontainers/features/docker-in-docker": {}
@@ -42,7 +42,6 @@
                 "sunipkm.autodocstringpy"
             ],
             "settings": {
-                "python.defaultInterpreterPath": "~/.virtualenvs/async-irc/bin/python",
                 "python.testing.pytestArgs": ["--no-cov"],
                 "terminal.integrated.profiles.linux": {
                     "zsh": {

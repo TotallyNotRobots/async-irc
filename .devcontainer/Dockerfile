@@ -9,6 +9,4 @@ RUN \
     && pipx install commitizen \
     && pip install -U hatch hatch-containers
 
-RUN su vscode -c "hatch config set dirs.env.virtual /home/vscode/.virtualenvs"
-
-ENV SHELL /bin/bash
+ENV SHELL=/bin/bash
