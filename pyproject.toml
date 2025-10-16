@@ -144,6 +144,7 @@ convention = "google"
 aggressive = true
 transform-joins = true
 transform-concats = true
+line-length = 120
 
 [tool.mypy]
 namespace_packages = true
@@ -174,6 +175,7 @@ enable_error_code = [
     "truthy-iterable",
     "ignore-without-code",
 ]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -198,7 +200,12 @@ relative_files = true
 [tool.commitizen]
 name = "cz_conventional_commits"
 tag_format = "v$version"
-version_scheme = "semver"
+version_scheme = "semver2"
 version_provider = "scm"
 update_changelog_on_bump = true
 major_version_zero = true
+annotated_tag = true
+
+[tool.nitpick]
+style = [
+  "gh://TotallyNotRobots/nitpick/lib-style-3.9.toml",]

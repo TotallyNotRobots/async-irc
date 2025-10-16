@@ -31,19 +31,19 @@ repos:
     id: pretty-format-json
   - id: check-toml
   repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: 2c9f875913ee60ca25ce70243dc24d5b6415598c
+  rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
 - repo: https://github.com/bwhmather/ssort
-  rev: dcb59fdb9b46ed1bb8e6ca2107e35f76cdc9c97e  # frozen: 0.12.4
+  rev: 2dd40ba37fdd472ce996668ea415077d756e651b # frozen: 0.15.0
   hooks:
   - id: ssort
 - hooks:
   - id: black
   repo: https://github.com/psf/black
-  rev: 8fe627072f15ff2e3d380887b92f7868efaf6d05
+  rev: af0ba72a73598c76189d6dd1b21d8532255d5942 # frozen: 25.9.0
 - hooks:
   - id: isort
   repo: https://github.com/pycqa/isort
-  rev: c235f5e450b4b84e58d114ed4c589cbf454175a3
+  rev: 0a09c783808cfe77bb3269250f663ff733d23302 # frozen: 7.0.0
 - hooks:
   - id: python-no-eval
   - id: python-no-log-warn
@@ -52,29 +52,29 @@ repos:
 - hooks:
   - id: flynt
   repo: https://github.com/ikamensh/flynt
-  rev: 651c822fdcf45fffcf9743dc755085f32acb65e3
+  rev: 97be693bf18bc2f050667dd282d243e2824b81e2 # frozen: 1.0.6
 - hooks:
   - args:
     - --py39-plus
     id: pyupgrade
   repo: https://github.com/asottile/pyupgrade
-  rev: 12af25eb252deaaecb6b259df40d01f42e716dc3
+  rev: f90119b1b8bd9e46949d9592972b2c4c27d62a97 # frozen: v3.21.0
 - hooks:
   - additional_dependencies:
     - tomli ; python_version < '3.11'
     id: auto-walrus
   repo: https://github.com/MarcoGorelli/auto-walrus
-  rev: 7855759486496a3248e9ff37dce7c6d57d39bfce
+  rev: ba0661836089a532a710f68713a3e3e53f7f0113 # frozen: 0.3.4
 - hooks:
   - additional_dependencies:
     - tomli ; python_version < '3.11'
     id: codespell
   repo: https://github.com/codespell-project/codespell
-  rev: 6e41aba91fb32e9feb741a6258eefeb9c6e4a482
+  rev: 63c8f8312b7559622c0d82815639671ae42132ac # frozen: v2.4.1
 - hooks:
   - id: commitizen
   repo: https://github.com/commitizen-tools/commitizen
-  rev: 7c0bc1591103b1f089aab9810fc2a201ccb0552b
+  rev: cc981fcb065527b6de0033b0cbf0432e69781901 # frozen: v4.9.1
 - hooks:
   - entry: hatch run python3 -m mypy
     exclude: tests/.*
@@ -84,3 +84,12 @@ repos:
     types:
     - python
   repo: local
+- repo: https://github.com/andreoliwa/nitpick
+  rev: "a5532d554f2c9035bb05ec14ee1bf31469e0a563" # frozen: v0.37.0
+  hooks:
+  - id: nitpick
+minimum_pre_commit_version: 2.18.0
+default_install_hook_types:
+- pre-commit
+- pre-push
+- commit-msg
