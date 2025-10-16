@@ -7,17 +7,16 @@ import socket
 import time
 from asyncio import Protocol, Task
 from collections import defaultdict
+from collections.abc import Coroutine, Sequence
 from enum import IntEnum, auto, unique
 from itertools import cycle
 from typing import (
     TYPE_CHECKING,
     Callable,
-    Coroutine,
     Dict,
     Final,
     List,
     Optional,
-    Sequence,
     Tuple,
     Union,
     cast,
@@ -133,7 +132,7 @@ async def _internal_cap_handler(
         msg = "Server not set in handler"
         raise ValueError(msg)
 
-    caplist: List[Cap] = []
+    caplist: list[Cap] = []
     if len(message.parameters) > (_CAP_LIST_MIN_PARAMS - 1):
         caplist = CapList.parse(message.parameters[-1])
 
@@ -171,7 +170,7 @@ async def _do_sasl(conn: "IrcProtocol", cap: Cap) -> None:
         return
 
     if cap.value is not None:
-        supported_mechs: Optional[List[str]] = cap.value.split(",")
+        supported_mechs: Optional[list[str]] = cap.value.split(",")
     else:
         supported_mechs = None
 
@@ -248,7 +247,7 @@ class IrcProtocol(Protocol):
         user: Optional[str] = None,
         realname: Optional[str] = None,
         certpath: Optional[str] = None,
-        sasl_auth: Optional[Tuple[str, str]] = None,
+        sasl_auth: Optional[tuple[str, str]] = None,
         sasl_mech: Optional[SASLMechanism] = None,
         logger: Optional["Logger"] = None,
         loop: Optional["AbstractEventLoop"] = None,
@@ -287,18 +286,18 @@ class IrcProtocol(Protocol):
             msg = "You must specify sasl_auth when using SASL PLAIN"
             raise ValueError(msg)
 
-        self.handlers: Dict[
+        self.handlers: dict[
             int,
-            Tuple[
+            tuple[
                 str,
                 Callable[
                     ["IrcProtocol", "Message"], Coroutine[None, None, None]
                 ],
             ],
         ] = {}
-        self.cap_handlers: Dict[
+        self.cap_handlers: dict[
             str,
-            List[
+            list[
                 Optional[
                     Callable[
                         ["IrcProtocol", "Cap"], Coroutine[None, None, None]

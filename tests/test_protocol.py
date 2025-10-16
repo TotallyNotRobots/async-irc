@@ -3,8 +3,9 @@
 import asyncio
 import logging
 import ssl
+from collections.abc import Mapping
 from ssl import SSLContext
-from typing import Any, Callable, List, Mapping, Optional, Tuple, TypeVar
+from typing import Any, Callable, List, Optional, Tuple, TypeVar
 
 from irclib.parser import Message
 
@@ -131,7 +132,7 @@ class MockServer(BaseServer):
         super().__init__(
             password=password, is_ssl=is_ssl, ssl_ctx=ssl_ctx, certpath=certpath
         )
-        self.lines: List[Tuple[str, str]] = []
+        self.lines: list[tuple[str, str]] = []
         self.in_buffer = b""
         self.transport: Optional[MockTransport] = None
 
@@ -150,7 +151,7 @@ class MockServer(BaseServer):
         *,
         loop: Optional[asyncio.AbstractEventLoop] = None,
         ssl: Optional[ssl.SSLContext] = None,
-    ) -> Tuple[asyncio.Transport, _ProtoT]:
+    ) -> tuple[asyncio.Transport, _ProtoT]:
         """Mock connection implementation.
 
         Args:

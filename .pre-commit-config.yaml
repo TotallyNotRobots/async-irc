@@ -55,7 +55,7 @@ repos:
   rev: 651c822fdcf45fffcf9743dc755085f32acb65e3
 - hooks:
   - args:
-    - --py38-plus
+    - --py39-plus
     id: pyupgrade
   repo: https://github.com/asottile/pyupgrade
   rev: 12af25eb252deaaecb6b259df40d01f42e716dc3
