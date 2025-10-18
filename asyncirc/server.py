@@ -62,7 +62,7 @@ class BaseServer:
         *,
         loop: Optional[asyncio.AbstractEventLoop] = None,
         ssl: Optional[ssl.SSLContext] = None,
-    ) -> Tuple[asyncio.Transport, _ProtoT]:
+    ) -> tuple[asyncio.Transport, _ProtoT]:
         """Internal connect implementation.
 
         This should not be called outside of `BaseServer`.
@@ -83,7 +83,7 @@ class BaseServer:
         protocol_factory: Callable[[], _ProtoT],
         *,
         loop: Optional[asyncio.AbstractEventLoop] = None,
-    ) -> Tuple[asyncio.Transport, _ProtoT]:
+    ) -> tuple[asyncio.Transport, _ProtoT]:
         """Wrapper for internal connect implementation.
 
         Args:
@@ -136,7 +136,7 @@ class BasicIPServer(BaseServer):
         *,
         loop: Optional[asyncio.AbstractEventLoop] = None,
         ssl: Optional[ssl.SSLContext] = None,
-    ) -> Tuple[asyncio.Transport, _ProtoT]:
+    ) -> tuple[asyncio.Transport, _ProtoT]:
         """TCP server connection implementation.
 
         Args:
@@ -195,7 +195,7 @@ class BasicUNIXServer(BaseServer):
         *,
         loop: Optional[asyncio.AbstractEventLoop] = None,
         ssl: Optional[ssl.SSLContext] = None,
-    ) -> Tuple[asyncio.Transport, _ProtoT]:
+    ) -> tuple[asyncio.Transport, _ProtoT]:
         """Connect to UNIX socket.
 
         Args:
@@ -268,7 +268,7 @@ class ConnectedServer:
         self.connection = server
         self.is_ssl = server.is_ssl
         self.password = server.password
-        self.isupport_tokens: Dict[str, Optional[str]] = {}
-        self.caps: Dict[str, Tuple[Cap, Optional[bool]]] = {}
+        self.isupport_tokens: dict[str, Optional[str]] = {}
+        self.caps: dict[str, tuple[Cap, Optional[bool]]] = {}
         self.server_name: Optional[str] = None
-        self.data: Dict[str, Any] = {}
+        self.data: dict[str, Any] = {}
