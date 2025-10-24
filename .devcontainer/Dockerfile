@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/python:3.13@sha256:c5c4c77e2919476f2e25998c4d9f73f489f3834197778132975f31a991623746
+FROM mcr.microsoft.com/devcontainers/python:3.14@sha256:43311767f101e1c2a7bd0ecacf2c866f5c42124fc2efe45bb384eb2995ecce4d
 
 RUN \
     pipx uninstall mypy \
