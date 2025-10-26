@@ -7,20 +7,10 @@ import socket
 import time
 from asyncio import Protocol, Task
 from collections import defaultdict
-from collections.abc import Coroutine, Sequence
+from collections.abc import Callable, Coroutine, Sequence
 from enum import IntEnum, auto, unique
 from itertools import cycle
-from typing import (
-    TYPE_CHECKING,
-    Callable,
-    Dict,
-    Final,
-    List,
-    Optional,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Final, Optional, cast
 
 from irclib.parser import Cap, CapList, Message
 
@@ -53,13 +43,13 @@ async def _internal_ping(conn: "IrcProtocol", message: "Message") -> None:
     conn.send(f"PONG {message.parameters}")
 
 
-def _handle_cap_list(conn: "IrcProtocol", caplist: "List[Cap]") -> None:
+def _handle_cap_list(conn: "IrcProtocol", caplist: "list[Cap]") -> None:
     if conn.logger:
         conn.logger.info("Current Capabilities: %s", caplist)
 
 
 def _handle_cap_del(
-    conn: "IrcProtocol", caplist: "List[Cap]", server: "ConnectedServer"
+    conn: "IrcProtocol", caplist: "list[Cap]", server: "ConnectedServer"
 ) -> None:
     if conn.logger:
         conn.logger.info("Capabilities removed: %s", caplist)
@@ -72,7 +62,7 @@ def _handle_cap_del(
 def _handle_cap_new(
     conn: "IrcProtocol",
     message: "Message",
-    caplist: "List[Cap]",
+    caplist: "list[Cap]",
     server: "ConnectedServer",
 ) -> None:
     if conn.logger:
@@ -90,7 +80,7 @@ def _handle_cap_new(
 async def _handle_cap_reply(
     conn: "IrcProtocol",
     message: "Message",
-    caplist: "List[Cap]",
+    caplist: "list[Cap]",
     server: "ConnectedServer",
 ) -> None:
     enabled = message.parameters[1] == "ACK"
@@ -109,7 +99,7 @@ async def _handle_cap_reply(
 def _handle_cap_ls(
     conn: "IrcProtocol",
     message: "Message",
-    caplist: "List[Cap]",
+    caplist: "list[Cap]",
     server: "ConnectedServer",
 ) -> None:
     for cap in caplist:
@@ -170,7 +160,7 @@ async def _do_sasl(conn: "IrcProtocol", cap: Cap) -> None:
         return
 
     if cap.value is not None:
-        supported_mechs: Optional[list[str]] = cap.value.split(",")
+        supported_mechs: list[str] | None = cap.value.split(",")
     else:
         supported_mechs = None
 
@@ -244,11 +234,11 @@ class IrcProtocol(Protocol):
         self,
         servers: Sequence["BaseServer"],
         nick: str,
-        user: Optional[str] = None,
-        realname: Optional[str] = None,
-        certpath: Optional[str] = None,
-        sasl_auth: Optional[tuple[str, str]] = None,
-        sasl_mech: Optional[SASLMechanism] = None,
+        user: str | None = None,
+        realname: str | None = None,
+        certpath: str | None = None,
+        sasl_auth: tuple[str, str] | None = None,
+        sasl_mech: SASLMechanism | None = None,
         logger: Optional["Logger"] = None,
         loop: Optional["AbstractEventLoop"] = None,
         *,
@@ -290,19 +280,14 @@ class IrcProtocol(Protocol):
             int,
             tuple[
                 str,
-                Callable[
-                    ["IrcProtocol", "Message"], Coroutine[None, None, None]
-                ],
+                Callable[[IrcProtocol, Message], Coroutine[None, None, None]],
             ],
         ] = {}
         self.cap_handlers: dict[
             str,
             list[
-                Optional[
-                    Callable[
-                        ["IrcProtocol", "Cap"], Coroutine[None, None, None]
-                    ]
-                ]
+                None
+                | (Callable[[IrcProtocol, Cap], Coroutine[None, None, None]])
             ],
         ] = defaultdict(list)
 
@@ -316,9 +301,7 @@ class IrcProtocol(Protocol):
         self.register("005", _isupport_handler)
         self.register_cap("sasl", _do_sasl)
 
-        self._pinger: Optional[Task[None]] = self.loop.create_task(
-            self.pinger()
-        )
+        self._pinger: Task[None] | None = self.loop.create_task(self.pinger())
 
     def __del__(self) -> None:
         """Automatically close connection on garbage collection."""
@@ -417,9 +400,9 @@ class IrcProtocol(Protocol):
     def register_cap(
         self,
         cap: str,
-        handler: Optional[
+        handler: None | (
             Callable[["IrcProtocol", "Cap"], Coroutine[None, None, None]]
-        ] = None,
+        ) = None,
     ) -> None:
         """Register a CAP handler.
 
@@ -430,8 +413,8 @@ class IrcProtocol(Protocol):
         self.cap_handlers[cap].append(handler)
 
     async def wait_for(
-        self, *cmds: str, timeout: Optional[int] = None
-    ) -> Optional[Message]:
+        self, *cmds: str, timeout: int | None = None
+    ) -> Message | None:
         """Wait for a matching command from the server.
 
         Wait for a specific command from the server, optionally returning after [timeout] seconds.
@@ -439,7 +422,7 @@ class IrcProtocol(Protocol):
         if not cmds:
             return None
 
-        fut: "asyncio.Future[Message]" = self.loop.create_future()
+        fut: asyncio.Future[Message] = self.loop.create_future()
 
         async def _wait(_conn: "IrcProtocol", message: "Message") -> None:
             if not fut.done():
@@ -457,14 +440,12 @@ class IrcProtocol(Protocol):
 
         return result
 
-    async def _send(self, text: Union[str, bytes]) -> None:
+    async def _send(self, text: str | bytes) -> None:
         if not self.connected:
             await self._connected_future
 
         if isinstance(text, str):
             text = text.encode()
-        elif isinstance(text, memoryview):
-            text = text.tobytes()
 
         if self.logger:
             self.logger.info(">> %s", text.decode())
@@ -475,7 +456,7 @@ class IrcProtocol(Protocol):
 
         self._transport.write(text + b"\r\n")
 
-    def send(self, text: Union[str, bytes]) -> None:
+    def send(self, text: str | bytes) -> None:
         """Send a raw line to the server."""
         asyncio.run_coroutine_threadsafe(self._send(text), self.loop)
 
@@ -483,7 +464,7 @@ class IrcProtocol(Protocol):
         """Send an irclib Message object to the server."""
         return self.send(str(msg))
 
-    def quit(self, reason: Optional[str] = None) -> None:
+    def quit(self, reason: str | None = None) -> None:
         """Quit the IRC connection with an optional reason."""
         if not self._quitting:
             self._quitting = True
@@ -509,7 +490,7 @@ class IrcProtocol(Protocol):
         self.send(f"NICK {self.nick}")
         self.send(f"USER {self.user} 0 * :{self.realname}")
 
-    def connection_lost(self, exc: Optional[Exception]) -> None:
+    def connection_lost(self, exc: Exception | None) -> None:
         """Connection to the IRC server has been lost."""
         self._transport = None
         self._connected = False

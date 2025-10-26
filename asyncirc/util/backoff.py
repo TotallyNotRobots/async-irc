@@ -2,7 +2,7 @@
 
 import asyncio
 import random
-from typing import Callable
+from collections.abc import Callable
 
 __all__ = ("AsyncDelayer",)
 

@@ -3,9 +3,9 @@
 import asyncio
 import logging
 import ssl
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from ssl import SSLContext
-from typing import Any, Callable, List, Optional, Tuple, TypeVar, Union
+from typing import Any, TypeVar
 
 from irclib.parser import Message
 
@@ -20,8 +20,8 @@ class MockTransport(asyncio.Transport):
         self,
         server: "MockServer",
         protocol: asyncio.BaseProtocol,
-        extra: Optional[Mapping[str, Any]] = None,
-        sasl_cap_mechs: Optional[list[str]] = None,
+        extra: Mapping[str, Any] | None = None,
+        sasl_cap_mechs: list[str] | None = None,
     ) -> None:
         """Create mock transport for testing.
 
@@ -35,7 +35,8 @@ class MockTransport(asyncio.Transport):
         super().__init__(extra)
         self._server = server
         if not isinstance(protocol, IrcProtocol):  # pragma: no cover
-            raise TypeError(f"Protocol is wrong type: {type(protocol)}")
+            msg = f"Protocol is wrong type: {type(protocol)}"
+            raise TypeError(msg)
 
         self._protocol = protocol
         self._write_buffer = b""
@@ -48,7 +49,7 @@ class MockTransport(asyncio.Transport):
         self._registered = False
         self._sasl_cap_mechs = sasl_cap_mechs
 
-    def write(self, data: Union[bytes, bytearray, memoryview]) -> None:
+    def write(self, data: bytes | bytearray | memoryview) -> None:
         """'Write data to the server.
 
         This just handles the incoming data and sends responses directly to the Protocol.
@@ -128,11 +129,11 @@ class MockServer(BaseServer):
     def __init__(
         self,
         *,
-        password: Optional[str] = None,
+        password: str | None = None,
         is_ssl: bool = False,
-        ssl_ctx: Optional[SSLContext] = None,
-        certpath: Optional[str] = None,
-        sasl_cap_mechs: Optional[list[str]] = None,
+        ssl_ctx: SSLContext | None = None,
+        certpath: str | None = None,
+        sasl_cap_mechs: list[str] | None = None,
     ) -> None:
         """Configure mock server.
 
@@ -147,7 +148,7 @@ class MockServer(BaseServer):
         )
         self.lines: list[tuple[str, str]] = []
         self.in_buffer = b""
-        self.transport: Optional[MockTransport] = None
+        self.transport: MockTransport | None = None
         self.sasl_cap_mechs = sasl_cap_mechs
 
     def send_line(self, msg: Message) -> None:
@@ -164,8 +165,8 @@ class MockServer(BaseServer):
         self,
         protocol_factory: Callable[[], _ProtoT],
         *,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
-        ssl: Optional[ssl.SSLContext] = None,
+        loop: asyncio.AbstractEventLoop | None = None,
+        ssl: ssl.SSLContext | None = None,
     ) -> tuple[asyncio.Transport, _ProtoT]:
         """Mock connection implementation.
 
@@ -187,9 +188,9 @@ class MockServer(BaseServer):
 
 async def test_sasl() -> None:
     """Test sasl flow."""
-    fut: "asyncio.Future[None]" = asyncio.Future()
+    fut = asyncio.Future[None]()
 
-    async def _on_001(_conn: "IrcProtocol", _msg: "Message") -> None:
+    async def _on_001(_conn: IrcProtocol, _msg: Message) -> None:
         _conn.send_command(Message.parse("PRIVMSG #foo :bar"))
         fut.set_result(None)
 
@@ -292,9 +293,9 @@ async def test_sasl() -> None:
 
 async def test_sasl_multiple_mechs() -> None:
     """Test sasl flow."""
-    fut: "asyncio.Future[None]" = asyncio.Future()
+    fut = asyncio.Future[None]()
 
-    async def _on_001(_conn: "IrcProtocol", _msg: "Message") -> None:
+    async def _on_001(_conn: IrcProtocol, _msg: Message) -> None:
         _conn.send_command(Message.parse("PRIVMSG #foo :bar"))
         fut.set_result(None)
 
@@ -397,9 +398,9 @@ async def test_sasl_multiple_mechs() -> None:
 
 async def test_sasl_unsupported_mechs() -> None:
     """Test sasl flow."""
-    fut: "asyncio.Future[None]" = asyncio.Future()
+    fut = asyncio.Future[None]()
 
-    async def _on_001(_conn: "IrcProtocol", _msg: "Message") -> None:
+    async def _on_001(_conn: IrcProtocol, _msg: Message) -> None:
         _conn.send_command(Message.parse("PRIVMSG #foo :bar"))
         fut.set_result(None)
 
@@ -486,9 +487,9 @@ async def test_sasl_unsupported_mechs() -> None:
 
 async def test_connect_ssl() -> None:
     """Test sasl flow."""
-    fut: "asyncio.Future[None]" = asyncio.Future()
+    fut = asyncio.Future[None]()
 
-    async def _on_001(_conn: "IrcProtocol", _msg: "Message") -> None:
+    async def _on_001(_conn: IrcProtocol, _msg: Message) -> None:
         _conn.send_command(Message.parse("PRIVMSG #foo :bar"))
         fut.set_result(None)
 

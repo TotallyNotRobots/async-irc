@@ -55,7 +55,7 @@ repos:
   rev: 97be693bf18bc2f050667dd282d243e2824b81e2 # frozen: 1.0.6
 - hooks:
   - args:
-    - --py39-plus
+    - --py310-plus
     id: pyupgrade
   repo: https://github.com/asottile/pyupgrade
   rev: f90119b1b8bd9e46949d9592972b2c4c27d62a97 # frozen: v3.21.0
@@ -85,9 +85,13 @@ repos:
     - python
   repo: local
 - repo: https://github.com/andreoliwa/nitpick
-  rev: "a5532d554f2c9035bb05ec14ee1bf31469e0a563" # frozen: v0.37.0
+  rev: "a1373f03f5a9394c75cc03e5da1b0cb6ff615dbb"  # frozen: v0.38.0
   hooks:
   - id: nitpick
+- repo: https://github.com/PyCQA/autoflake
+  rev: '0544741e2b4a22b472d9d93e37d4ea9153820bb1'  # frozen: v2.3.1
+  hooks:
+  - id: autoflake
 minimum_pre_commit_version: 2.18.0
 default_install_hook_types:
 - pre-commit
