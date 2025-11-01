@@ -46,6 +46,8 @@ jobs:
       with:
         version: "${{ env.HATCH_VERSION }}"
 
+    - run: hatch env find
+
     - name: Run type check
       run: hatch run types:check
 
