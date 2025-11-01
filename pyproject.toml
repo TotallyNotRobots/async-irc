@@ -36,40 +36,55 @@ packages = ["asyncirc"]
 [tool.hatch.build.hooks.vcs]
 version-file = "asyncirc/_version.py"
 
-[tool.hatch.env]
-requires = ["hatch-containers"]
-
 [tool.hatch.envs.default]
 dependencies = [
-    "coverage[toml]>=6.5",
-    "pytest>=6.0",
-    "pytest-asyncio",
-    "pre-commit",
-    "mypy>=1.8",
+    "coverage[toml]==6.5.0",
+    "pytest==8.3.0",
+    "pytest-asyncio==0.23.5",
+    "pre-commit==4.3.0",
+    "mypy==1.8.0",
+]
+post-install-commands = [
+    "hatch run pre-commit:install"
 ]
 
-[tool.hatch.envs.default.scripts]
-test = "pytest"
-test-cov = ["coverage run -pm pytest"]
-cov-report = [
-    "- coverage combine",
-    "coverage xml",
-    "coverage report --show-missing",
+[tool.hatch.envs.hatch-test]
+post-install-commands = []
+default-args = ["tests", "asyncirc"]
+extra-args = ["-vv", "--junitxml=junit.xml"]
+extra-dependencies = ["pytest-asyncio==0.23.5"]
+[tool.hatch.envs.hatch-test.scripts]
+run = "pytest{env:HATCH_TEST_ARGS:} {args}"
+run-cov = "coverage run -m pytest{env:HATCH_TEST_ARGS:} {args}"
+cov-combine = "coverage combine"
+cov-report = ["coverage report --show-missing --skip-covered", "coverage xml"]
+
+[tool.hatch.envs.hatch-static-analysis]
+post-install-commands = []
+
+[tool.hatch.envs.hatch-build]
+post-install-commands = []
+
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.12", "3.11", "3.10"]
+
+[tool.hatch.envs.pre-commit]
+extra-dependencies = [
+    "pre-commit==4.3.0",
 ]
-cov = ["- coverage erase", "test-cov", "cov-report"]
-cov-all = ["- coverage erase", "hatch run testall:test-cov", "cov-report"]
+post-install-commands = []
+[tool.hatch.envs.pre-commit.scripts]
+run = "pre-commit run {args:--all}"
+install = "pre-commit install -f"
 
-setup-pre-commit = "python3 -m pre_commit install --install-hooks -t commit-msg -t pre-push -t pre-commit"
-setup-dev = ["setup-pre-commit"]
-
-pre-commit = "python3 -m pre_commit run {args:--all}"
-
-[tool.hatch.envs.testall]
-type = "container"
-dependencies = ["coverage[toml]>=6.5", "pytest>=6.0", "pytest-asyncio"]
-
-[[tool.hatch.envs.testall.matrix]]
-python = ["3.10", "3.11", "3.12"]
+[tool.hatch.envs.types]
+template = "hatch-test"
+extra-dependencies = [
+    "mypy==1.18.2",
+]
+post-install-commands = []
+[tool.hatch.envs.types.scripts]
+check = "mypy {args:asyncirc tests}"
 
 [tool.isort]
 profile = "black"
@@ -176,10 +191,10 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--doctest-modules"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 filterwarnings = ["error"]
+addopts = "--doctest-modules"
 
 [tool.coverage.report]
 exclude_lines = [
