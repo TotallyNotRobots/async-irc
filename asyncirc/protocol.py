@@ -98,7 +98,7 @@ async def _handle_cap_reply(
         current = server.caps[cap.name][0]
         if enabled:
             handlers = filter(None, conn.cap_handlers[cap.name])
-            await asyncio.gather(*[func(conn, cap) for func in handlers])
+            await asyncio.gather(*[func(conn, current) for func in handlers])
 
         server.caps[cap.name] = (current, enabled)
 
