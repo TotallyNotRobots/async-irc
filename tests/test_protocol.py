@@ -5,7 +5,7 @@ import logging
 import ssl
 from collections.abc import Mapping
 from ssl import SSLContext
-from typing import Any, Callable, List, Optional, Tuple, TypeVar
+from typing import Any, Callable, List, Optional, Tuple, TypeVar, Union
 
 from irclib.parser import Message
 
@@ -21,6 +21,7 @@ class MockTransport(asyncio.Transport):
         server: "MockServer",
         protocol: asyncio.BaseProtocol,
         extra: Optional[Mapping[str, Any]] = None,
+        sasl_cap_mechs: Optional[list[str]] = None,
     ) -> None:
         """Create mock transport for testing.
 
@@ -33,6 +34,9 @@ class MockTransport(asyncio.Transport):
         """
         super().__init__(extra)
         self._server = server
+        if not isinstance(protocol, IrcProtocol):  # pragma: no cover
+            raise TypeError(f"Protocol is wrong type: {type(protocol)}")
+
         self._protocol = protocol
         self._write_buffer = b""
 
@@ -42,8 +46,9 @@ class MockTransport(asyncio.Transport):
         self._received_cap_end = False
         self._did_ping = False
         self._registered = False
+        self._sasl_cap_mechs = sasl_cap_mechs
 
-    def write(self, data: bytes) -> None:
+    def write(self, data: Union[bytes, bytearray, memoryview]) -> None:
         """'Write data to the server.
 
         This just handles the incoming data and sends responses directly to the Protocol.
@@ -51,7 +56,9 @@ class MockTransport(asyncio.Transport):
         Args:
             data: Data to send
         """
+        assert self._protocol.logger is not None
         self._protocol.logger.info(data)
+
         self._write_buffer += data
         while b"\r\n" in self._write_buffer:
             part, self._write_buffer = self._write_buffer.split(b"\r\n", 1)
@@ -59,9 +66,14 @@ class MockTransport(asyncio.Transport):
             self._server.lines.append(("in", str(msg)))
             if msg.command == "CAP" and msg.parameters[0] == "LS":
                 self._received_cap_ls = True
+                if self._sasl_cap_mechs:
+                    sasl_cap = f"sasl={','.join(self._sasl_cap_mechs)}"
+                else:
+                    sasl_cap = "sasl"
+
                 self._server.send_line(
                     Message.parse(
-                        ":irc.example.com CAP * LS :foo sasl=PLAIN bar"
+                        f":irc.example.com CAP * LS :foo {sasl_cap} bar"
                     )
                 )
             elif msg.command == "USER":
@@ -102,7 +114,7 @@ class MockTransport(asyncio.Transport):
                         Message.parse(":irc.example.com PING foobar")
                     )
 
-    def get_protocol(self) -> asyncio.BaseProtocol:
+    def get_protocol(self) -> IrcProtocol:
         """Get current protocol."""
         return self._protocol
 
@@ -120,6 +132,7 @@ class MockServer(BaseServer):
         is_ssl: bool = False,
         ssl_ctx: Optional[SSLContext] = None,
         certpath: Optional[str] = None,
+        sasl_cap_mechs: Optional[list[str]] = None,
     ) -> None:
         """Configure mock server.
 
@@ -135,6 +148,7 @@ class MockServer(BaseServer):
         self.lines: list[tuple[str, str]] = []
         self.in_buffer = b""
         self.transport: Optional[MockTransport] = None
+        self.sasl_cap_mechs = sasl_cap_mechs
 
     def send_line(self, msg: Message) -> None:
         """Send line back to client.
@@ -143,6 +157,7 @@ class MockServer(BaseServer):
             msg: Message to send to client.
         """
         assert self.transport is not None
+        self.lines.append(("out", str(msg)))
         self.transport.get_protocol().data_received(str(msg).encode() + b"\r\n")
 
     async def connect(
@@ -163,7 +178,9 @@ class MockServer(BaseServer):
             Tuple of transport and protocol.
         """
         proto = protocol_factory()
-        self.transport = MockTransport(self, proto)
+        self.transport = MockTransport(
+            self, proto, sasl_cap_mechs=self.sasl_cap_mechs
+        )
         proto.connection_made(self.transport)
         return self.transport, proto
 
@@ -173,7 +190,7 @@ async def test_sasl() -> None:
     fut: "asyncio.Future[None]" = asyncio.Future()
 
     async def _on_001(_conn: "IrcProtocol", _msg: "Message") -> None:
-        _conn.send_command("PRIVMSG #foo :bar")
+        _conn.send_command(Message.parse("PRIVMSG #foo :bar"))
         fut.set_result(None)
 
     server = MockServer()
@@ -201,6 +218,10 @@ async def test_sasl() -> None:
             "CAP LS 302",
         ),
         (
+            "out",
+            ":irc.example.com CAP * LS :foo sasl bar",
+        ),
+        (
             "in",
             "NICK nick",
         ),
@@ -213,26 +234,353 @@ async def test_sasl() -> None:
             "CAP REQ :foo",
         ),
         (
+            "out",
+            ":irc.example.com CAP * ACK :foo",
+        ),
+        (
             "in",
             "CAP REQ :sasl",
+        ),
+        (
+            "out",
+            ":irc.example.com CAP * ACK :sasl",
         ),
         (
             "in",
             "CAP REQ :bar",
         ),
         (
+            "out",
+            ":irc.example.com CAP * ACK :bar",
+        ),
+        (
             "in",
             "AUTHENTICATE PLAIN",
+        ),
+        (
+            "out",
+            ":irc.example.com AUTHENTICATE +",
         ),
         (
             "in",
             "AUTHENTICATE Zm9vAGZvbwBiYXI=",
         ),
         (
+            "out",
+            ":irc.example.com 903",
+        ),
+        (
             "in",
             "CAP END",
         ),
+        (
+            "out",
+            ":irc.example.com PING foobar",
+        ),
         ("in", "PONG foobar"),
+        (
+            "out",
+            ":irc.example.com 001",
+        ),
+        ("in", "PRIVMSG #foo :bar"),
+        (
+            "in",
+            "QUIT",
+        ),
+    ]
+
+
+async def test_sasl_multiple_mechs() -> None:
+    """Test sasl flow."""
+    fut: "asyncio.Future[None]" = asyncio.Future()
+
+    async def _on_001(_conn: "IrcProtocol", _msg: "Message") -> None:
+        _conn.send_command(Message.parse("PRIVMSG #foo :bar"))
+        fut.set_result(None)
+
+    server = MockServer(sasl_cap_mechs=["PLAIN", "EXTERNAL"])
+
+    logging.getLogger("asyncio").setLevel(0)
+
+    with IrcProtocol(
+        [server],
+        "nick",
+        sasl_auth=("foo", "bar"),
+        sasl_mech=SASLMechanism.PLAIN,
+        logger=logging.getLogger("asyncirc"),
+    ) as proto:
+        proto.register_cap("foo")
+        proto.register_cap("bar")
+        proto.register("001", _on_001)
+        await proto.connect()
+        await fut
+        proto.quit()
+        await proto.quit_future
+
+    assert server.lines == [
+        (
+            "in",
+            "CAP LS 302",
+        ),
+        (
+            "out",
+            ":irc.example.com CAP * LS :foo sasl=PLAIN,EXTERNAL bar",
+        ),
+        (
+            "in",
+            "NICK nick",
+        ),
+        (
+            "in",
+            "USER nick 0 * :nick",
+        ),
+        (
+            "in",
+            "CAP REQ :foo",
+        ),
+        (
+            "out",
+            ":irc.example.com CAP * ACK :foo",
+        ),
+        (
+            "in",
+            "CAP REQ :sasl",
+        ),
+        (
+            "out",
+            ":irc.example.com CAP * ACK :sasl",
+        ),
+        (
+            "in",
+            "CAP REQ :bar",
+        ),
+        (
+            "out",
+            ":irc.example.com CAP * ACK :bar",
+        ),
+        (
+            "in",
+            "AUTHENTICATE PLAIN",
+        ),
+        (
+            "out",
+            ":irc.example.com AUTHENTICATE +",
+        ),
+        (
+            "in",
+            "AUTHENTICATE Zm9vAGZvbwBiYXI=",
+        ),
+        (
+            "out",
+            ":irc.example.com 903",
+        ),
+        (
+            "in",
+            "CAP END",
+        ),
+        (
+            "out",
+            ":irc.example.com PING foobar",
+        ),
+        ("in", "PONG foobar"),
+        (
+            "out",
+            ":irc.example.com 001",
+        ),
+        ("in", "PRIVMSG #foo :bar"),
+        (
+            "in",
+            "QUIT",
+        ),
+    ]
+
+
+async def test_sasl_unsupported_mechs() -> None:
+    """Test sasl flow."""
+    fut: "asyncio.Future[None]" = asyncio.Future()
+
+    async def _on_001(_conn: "IrcProtocol", _msg: "Message") -> None:
+        _conn.send_command(Message.parse("PRIVMSG #foo :bar"))
+        fut.set_result(None)
+
+    server = MockServer(sasl_cap_mechs=["EXTERNAL"])
+
+    logging.getLogger("asyncio").setLevel(0)
+
+    with IrcProtocol(
+        [server],
+        "nick",
+        sasl_auth=("foo", "bar"),
+        sasl_mech=SASLMechanism.PLAIN,
+        logger=logging.getLogger("asyncirc"),
+    ) as proto:
+        proto.register_cap("foo")
+        proto.register_cap("bar")
+        proto.register("001", _on_001)
+        await proto.connect()
+        await fut
+        proto.quit()
+        await proto.quit_future
+
+    assert server.lines == [
+        (
+            "in",
+            "CAP LS 302",
+        ),
+        (
+            "out",
+            ":irc.example.com CAP * LS :foo sasl=EXTERNAL bar",
+        ),
+        (
+            "in",
+            "NICK nick",
+        ),
+        (
+            "in",
+            "USER nick 0 * :nick",
+        ),
+        (
+            "in",
+            "CAP REQ :foo",
+        ),
+        (
+            "out",
+            ":irc.example.com CAP * ACK :foo",
+        ),
+        (
+            "in",
+            "CAP REQ :sasl",
+        ),
+        (
+            "out",
+            ":irc.example.com CAP * ACK :sasl",
+        ),
+        (
+            "in",
+            "CAP REQ :bar",
+        ),
+        (
+            "out",
+            ":irc.example.com CAP * ACK :bar",
+        ),
+        (
+            "in",
+            "CAP END",
+        ),
+        (
+            "out",
+            ":irc.example.com PING foobar",
+        ),
+        ("in", "PONG foobar"),
+        (
+            "out",
+            ":irc.example.com 001",
+        ),
+        ("in", "PRIVMSG #foo :bar"),
+        (
+            "in",
+            "QUIT",
+        ),
+    ]
+
+
+async def test_connect_ssl() -> None:
+    """Test sasl flow."""
+    fut: "asyncio.Future[None]" = asyncio.Future()
+
+    async def _on_001(_conn: "IrcProtocol", _msg: "Message") -> None:
+        _conn.send_command(Message.parse("PRIVMSG #foo :bar"))
+        fut.set_result(None)
+
+    server = MockServer(is_ssl=True)
+
+    logging.getLogger("asyncio").setLevel(0)
+
+    with IrcProtocol(
+        [server],
+        "nick",
+        sasl_auth=("foo", "bar"),
+        sasl_mech=SASLMechanism.PLAIN,
+        logger=logging.getLogger("asyncirc"),
+    ) as proto:
+        proto.register_cap("foo")
+        proto.register_cap("bar")
+        proto.register("001", _on_001)
+        await proto.connect()
+        await fut
+        proto.quit()
+        await proto.quit_future
+
+    assert server.lines == [
+        (
+            "in",
+            "CAP LS 302",
+        ),
+        (
+            "out",
+            ":irc.example.com CAP * LS :foo sasl bar",
+        ),
+        (
+            "in",
+            "NICK nick",
+        ),
+        (
+            "in",
+            "USER nick 0 * :nick",
+        ),
+        (
+            "in",
+            "CAP REQ :foo",
+        ),
+        (
+            "out",
+            ":irc.example.com CAP * ACK :foo",
+        ),
+        (
+            "in",
+            "CAP REQ :sasl",
+        ),
+        (
+            "out",
+            ":irc.example.com CAP * ACK :sasl",
+        ),
+        (
+            "in",
+            "CAP REQ :bar",
+        ),
+        (
+            "out",
+            ":irc.example.com CAP * ACK :bar",
+        ),
+        (
+            "in",
+            "AUTHENTICATE PLAIN",
+        ),
+        (
+            "out",
+            ":irc.example.com AUTHENTICATE +",
+        ),
+        (
+            "in",
+            "AUTHENTICATE Zm9vAGZvbwBiYXI=",
+        ),
+        (
+            "out",
+            ":irc.example.com 903",
+        ),
+        (
+            "in",
+            "CAP END",
+        ),
+        (
+            "out",
+            ":irc.example.com PING foobar",
+        ),
+        ("in", "PONG foobar"),
+        (
+            "out",
+            ":irc.example.com 001",
+        ),
         ("in", "PRIVMSG #foo :bar"),
         (
             "in",
