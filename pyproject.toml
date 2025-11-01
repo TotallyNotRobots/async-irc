@@ -40,7 +40,7 @@ version-file = "asyncirc/_version.py"
 dependencies = [
     "coverage[toml]==6.5.0",
     "pytest==8.3.0",
-    "pytest-asyncio==0.23.5",
+    "pytest-asyncio==1.2.0",
     "pre-commit==4.3.0",
     "mypy==1.8.0",
 ]
@@ -52,7 +52,7 @@ post-install-commands = [
 post-install-commands = []
 default-args = ["tests", "asyncirc"]
 extra-args = ["-vv", "--junitxml=junit.xml"]
-extra-dependencies = ["pytest-asyncio==0.23.5"]
+extra-dependencies = ["pytest-asyncio==1.2.0"]
 [tool.hatch.envs.hatch-test.scripts]
 run = "pytest{env:HATCH_TEST_ARGS:} {args}"
 run-cov = "coverage run -m pytest{env:HATCH_TEST_ARGS:} {args}"
