@@ -3,7 +3,8 @@
 import asyncio
 import ssl
 import warnings
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, TypeVar
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, TypeVar
 
 if TYPE_CHECKING:
     from irclib.parser import Cap
@@ -25,10 +26,10 @@ class BaseServer:
     def __init__(
         self,
         *,
-        password: Optional[str] = None,
+        password: str | None = None,
         is_ssl: bool = False,
-        ssl_ctx: Optional[ssl.SSLContext] = None,
-        certpath: Optional[str] = None,
+        ssl_ctx: ssl.SSLContext | None = None,
+        certpath: str | None = None,
     ) -> None:
         """Set server connection options.
 
@@ -45,7 +46,7 @@ class BaseServer:
             if certpath:
                 ssl_ctx.load_cert_chain(certpath)
 
-            self.ssl_ctx: Optional[ssl.SSLContext] = ssl_ctx
+            self.ssl_ctx: ssl.SSLContext | None = ssl_ctx
         else:
             self.ssl_ctx = None
 
@@ -60,8 +61,8 @@ class BaseServer:
         self,
         protocol_factory: Callable[[], _ProtoT],
         *,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
-        ssl: Optional[ssl.SSLContext] = None,
+        loop: asyncio.AbstractEventLoop | None = None,
+        ssl: ssl.SSLContext | None = None,
     ) -> tuple[asyncio.Transport, _ProtoT]:
         """Internal connect implementation.
 
@@ -82,7 +83,7 @@ class BaseServer:
         self,
         protocol_factory: Callable[[], _ProtoT],
         *,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
+        loop: asyncio.AbstractEventLoop | None = None,
     ) -> tuple[asyncio.Transport, _ProtoT]:
         """Wrapper for internal connect implementation.
 
@@ -109,9 +110,9 @@ class BasicIPServer(BaseServer):
         host: str,
         port: int,
         is_ssl: bool = False,
-        password: Optional[str] = None,
-        ssl_ctx: Optional[ssl.SSLContext] = None,
-        certpath: Optional[str] = None,
+        password: str | None = None,
+        ssl_ctx: ssl.SSLContext | None = None,
+        certpath: str | None = None,
     ) -> None:
         """Create TCP server configuration.
 
@@ -134,8 +135,8 @@ class BasicIPServer(BaseServer):
         self,
         protocol_factory: Callable[[], _ProtoT],
         *,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
-        ssl: Optional[ssl.SSLContext] = None,
+        loop: asyncio.AbstractEventLoop | None = None,
+        ssl: ssl.SSLContext | None = None,
     ) -> tuple[asyncio.Transport, _ProtoT]:
         """TCP server connection implementation.
 
@@ -170,9 +171,9 @@ class BasicUNIXServer(BaseServer):
         *,
         path: str,
         is_ssl: bool = False,
-        password: Optional[str] = None,
-        ssl_ctx: Optional[ssl.SSLContext] = None,
-        certpath: Optional[str] = None,
+        password: str | None = None,
+        ssl_ctx: ssl.SSLContext | None = None,
+        certpath: str | None = None,
     ) -> None:
         """Configure UNIX socket based server connection.
 
@@ -193,8 +194,8 @@ class BasicUNIXServer(BaseServer):
         self,
         protocol_factory: Callable[[], _ProtoT],
         *,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
-        ssl: Optional[ssl.SSLContext] = None,
+        loop: asyncio.AbstractEventLoop | None = None,
+        ssl: ssl.SSLContext | None = None,
     ) -> tuple[asyncio.Transport, _ProtoT]:
         """Connect to UNIX socket.
 
@@ -229,7 +230,7 @@ class Server(BasicIPServer):
         host: str,
         port: int,
         is_ssl: bool = False,
-        password: Optional[str] = None,
+        password: str | None = None,
     ) -> None:
         """Create basic server configuration.
 
@@ -268,7 +269,7 @@ class ConnectedServer:
         self.connection = server
         self.is_ssl = server.is_ssl
         self.password = server.password
-        self.isupport_tokens: dict[str, Optional[str]] = {}
-        self.caps: dict[str, tuple[Cap, Optional[bool]]] = {}
-        self.server_name: Optional[str] = None
+        self.isupport_tokens: dict[str, str | None] = {}
+        self.caps: dict[str, tuple[Cap, bool | None]] = {}
+        self.server_name: str | None = None
         self.data: dict[str, Any] = {}
