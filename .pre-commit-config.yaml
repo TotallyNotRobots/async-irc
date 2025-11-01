@@ -1,104 +1,104 @@
 repos:
-- repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
-  hooks:
-  - id: trailing-whitespace
-    args:
-    - --markdown-linebreak-ext=md,markdown
-  - id: end-of-file-fixer
-  - id: check-yaml
-  - id: check-added-large-files
-  - id: check-ast
-  - id: fix-byte-order-marker
-  - id: check-merge-conflict
-  - id: debug-statements
-  - id: detect-private-key
-  - id: check-builtin-literals
-  - id: check-case-conflict
-  - id: check-docstring-first
-  - id: check-executables-have-shebangs
-  - id: check-shebang-scripts-are-executable
-  - id: check-symlinks
-  - id: mixed-line-ending
-    args:
-      - --fix=lf
-  - id: check-json
-    exclude: ^\.(vscode|devcontainer)/
-  - id: pretty-format-json
-    exclude: ^\.(vscode|devcontainer)/
-    args:
-      - --indent
-      - '4'
-      - --autofix
-      - --no-sort-keys
-  - id: check-toml
-- repo: https://github.com/bwhmather/ssort
-  rev: 2dd40ba37fdd472ce996668ea415077d756e651b  # frozen: 0.15.0
-  hooks:
-  - id: ssort
-- repo: https://github.com/psf/black
-  rev: af0ba72a73598c76189d6dd1b21d8532255d5942  # frozen: 25.9.0
-  hooks:
-  - id: black
-- repo: https://github.com/pycqa/isort
-  rev: 0a09c783808cfe77bb3269250f663ff733d23302  # frozen: 7.0.0
-  hooks:
-  - id: isort
-- repo: https://github.com/pre-commit/pygrep-hooks
-  rev: 3a6eb0fadf60b3cccfd80bad9dbb6fae7e47b316
-  hooks:
-  - id: python-no-eval
-  - id: python-no-log-warn
-- repo: https://github.com/ikamensh/flynt
-  rev: 97be693bf18bc2f050667dd282d243e2824b81e2  # frozen: 1.0.6
-  hooks:
-  - id: flynt
-- repo: https://github.com/asottile/pyupgrade
-  rev: f90119b1b8bd9e46949d9592972b2c4c27d62a97  # frozen: v3.21.0
-  hooks:
-  - id: pyupgrade
-    args:
-    - --py310-plus
-- repo: https://github.com/MarcoGorelli/auto-walrus
-  rev: ba0661836089a532a710f68713a3e3e53f7f0113  # frozen: 0.3.4
-  hooks:
-  - id: auto-walrus
-    additional_dependencies:
-    - tomli ; python_version < '3.11'
-- repo: https://github.com/codespell-project/codespell
-  rev: 63c8f8312b7559622c0d82815639671ae42132ac  # frozen: v2.4.1
-  hooks:
-  - id: codespell
-    additional_dependencies:
-    - tomli ; python_version < '3.11'
-- repo: https://github.com/commitizen-tools/commitizen
-  rev: cc981fcb065527b6de0033b0cbf0432e69781901  # frozen: v4.9.1
-  hooks:
-  - id: commitizen
-- repo: local
-  hooks:
-  # - id: hatch-fmt
-  #   entry: hatch fmt
-  #   language: system
-  #   name: hatch fmt
-  #   types:
-  #   - python
-  - id: hatch-types
-    entry: hatch run types:check
-    language: system
-    name: hatch types
-    types:
-    - python
-- repo: https://github.com/andreoliwa/nitpick
-  rev: 'a1373f03f5a9394c75cc03e5da1b0cb6ff615dbb'  # frozen: v0.38.0
-  hooks:
-  - id: nitpick
-- repo: https://github.com/PyCQA/autoflake
-  rev: '0544741e2b4a22b472d9d93e37d4ea9153820bb1'  # frozen: v2.3.1
-  hooks:
-  - id: autoflake
-minimum_pre_commit_version: 2.18.0
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        args:
+          - --markdown-linebreak-ext=md,markdown
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-ast
+      - id: fix-byte-order-marker
+      - id: check-merge-conflict
+      - id: debug-statements
+      - id: detect-private-key
+      - id: check-builtin-literals
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: check-symlinks
+      - id: mixed-line-ending
+        args:
+          - --fix=lf
+      - id: check-json
+        exclude: ^\.(vscode|devcontainer)/
+      - id: pretty-format-json
+        exclude: ^\.(vscode|devcontainer)/
+        args:
+          - --indent
+          - '4'
+          - --autofix
+          - --no-sort-keys
+      - id: check-toml
+  - repo: https://github.com/bwhmather/ssort
+    rev: 2dd40ba37fdd472ce996668ea415077d756e651b # frozen: 0.15.0
+    hooks:
+      - id: ssort
+  - repo: https://github.com/psf/black
+    rev: af0ba72a73598c76189d6dd1b21d8532255d5942 # frozen: 25.9.0
+    hooks:
+      - id: black
+  - repo: https://github.com/pycqa/isort
+    rev: 0a09c783808cfe77bb3269250f663ff733d23302 # frozen: 7.0.0
+    hooks:
+      - id: isort
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: 3a6eb0fadf60b3cccfd80bad9dbb6fae7e47b316
+    hooks:
+      - id: python-no-eval
+      - id: python-no-log-warn
+  - repo: https://github.com/ikamensh/flynt
+    rev: 97be693bf18bc2f050667dd282d243e2824b81e2 # frozen: 1.0.6
+    hooks:
+      - id: flynt
+  - repo: https://github.com/asottile/pyupgrade
+    rev: f90119b1b8bd9e46949d9592972b2c4c27d62a97 # frozen: v3.21.0
+    hooks:
+      - id: pyupgrade
+        args:
+          - --py310-plus
+  - repo: https://github.com/MarcoGorelli/auto-walrus
+    rev: ba0661836089a532a710f68713a3e3e53f7f0113 # frozen: 0.3.4
+    hooks:
+      - id: auto-walrus
+        additional_dependencies:
+          - tomli ; python_version < '3.11'
+  - repo: https://github.com/codespell-project/codespell
+    rev: 63c8f8312b7559622c0d82815639671ae42132ac # frozen: v2.4.1
+    hooks:
+      - id: codespell
+        additional_dependencies:
+          - tomli ; python_version < '3.11'
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: cc981fcb065527b6de0033b0cbf0432e69781901 # frozen: v4.9.1
+    hooks:
+      - id: commitizen
+  - repo: local
+    hooks:
+    # - id: hatch-fmt
+    #   entry: hatch fmt
+    #   language: system
+    #   name: hatch fmt
+    #   types:
+    #   - python
+      - id: hatch-types
+        entry: hatch run types:check
+        language: system
+        name: hatch types
+        types:
+          - python
+  - repo: https://github.com/andreoliwa/nitpick
+    rev: 'a1373f03f5a9394c75cc03e5da1b0cb6ff615dbb' # frozen: v0.38.0
+    hooks:
+      - id: nitpick
+  - repo: https://github.com/PyCQA/autoflake
+    rev: '0544741e2b4a22b472d9d93e37d4ea9153820bb1' # frozen: v2.3.1
+    hooks:
+      - id: autoflake
+minimum_pre_commit_version: 4.3.0
 default_install_hook_types:
-- pre-commit
-- pre-push
-- commit-msg
+  - pre-commit
+  - pre-push
+  - commit-msg
