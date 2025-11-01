@@ -1,9 +1,19 @@
 name: Build and Publish
 
-on: [push]
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+env:
+  HATCH_VERSION: "1.15.1"
 
 jobs:
   build:
+    permissions:
+      contents: read
     name: Build distribution 📦
     runs-on: ubuntu-latest
     steps:
@@ -12,11 +22,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
         with:
-          python-version: "3.x"
+          python-version: "3.12"
 
-      - name: Install hatch
-        run: >-
-          python3 -m pip install --upgrade hatch --user
+      - name: Install Hatch
+        uses: pypa/hatch@install
+        with:
+          version: "${{ env.HATCH_VERSION }}"
 
       - name: Build a binary wheel and a source tarball
         run: hatch build

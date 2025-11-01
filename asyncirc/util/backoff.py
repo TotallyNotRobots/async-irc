@@ -11,16 +11,16 @@ class AsyncDelayer:
     """Implementation of the exponential back-off algorithm for handling server reconnects.
 
     Implemented as a re-entrant async context manager so it can be used like so:
-    >>> import asyncio
-    >>> async def connect() -> None:
+    >>> import asyncio  # doctest: +SKIP
+    >>> async def connect() -> None: # doctest: +SKIP
     ...     delayer = AsyncDelayer()
     ...     connected = False
     ...     while not connected:
     ...         async with delayer:
     ...             # Attempt connection
     ...
-    >>> loop = asyncio.get_event_loop()
-    >>> loop.run_until_complete(connect())
+    >>> loop = asyncio.get_event_loop() # doctest: +SKIP
+    >>> loop.run_until_complete(connect()) # doctest: +SKIP
     """
 
     def __init__(self, base: int = 1, *, integral: bool = False) -> None:
