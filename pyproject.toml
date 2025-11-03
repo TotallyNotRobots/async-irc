@@ -192,11 +192,11 @@ enable_error_code = [
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-minversion = "6.0"
+minversion = "8.0"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 filterwarnings = ["error"]
-addopts = "--doctest-modules"
+addopts = ["--doctest-modules"]
 
 [tool.coverage.report]
 exclude_lines = [
