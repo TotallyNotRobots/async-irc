@@ -183,3 +183,4 @@ tags
 .ruff_cache/
 coverage.*
 .coverage.*
+.cache/nitpick/

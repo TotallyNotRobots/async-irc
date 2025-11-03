@@ -9,7 +9,7 @@ description = "A simple asyncio.Protocol implementation designed for IRC"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
-authors = [{ name = "linuxdaemon", email = "linuxdaemon.irc@gmail.com" }]
+authors = [{name = "linuxdaemon", email = "linuxdaemon.irc@gmail.com"}]
 keywords = ["async-irc", "asyncio", "asyncirc", "irc", "irc-framework"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -46,20 +46,22 @@ dependencies = [
     "pre-commit==4.3.0",
     "mypy==1.18.2",
 ]
-post-install-commands = [
-    "hatch run pre-commit:install"
-]
+post-install-commands = ["hatch run pre-commit:install"]
 
 [tool.hatch.envs.hatch-test]
 post-install-commands = []
 default-args = ["tests", "asyncirc"]
 extra-args = ["-vv", "--junitxml=junit.xml"]
 extra-dependencies = ["pytest-asyncio==1.2.0"]
+
 [tool.hatch.envs.hatch-test.scripts]
 run = "pytest{env:HATCH_TEST_ARGS:} {args}"
 run-cov = "coverage run -m pytest{env:HATCH_TEST_ARGS:} {args}"
 cov-combine = "coverage combine"
 cov-report = ["coverage report --show-missing --skip-covered", "coverage xml"]
+
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.14", "3.13", "3.12", "3.11", "3.10"]
 
 [tool.hatch.envs.hatch-static-analysis]
 post-install-commands = []
@@ -67,24 +69,19 @@ post-install-commands = []
 [tool.hatch.envs.hatch-build]
 post-install-commands = []
 
-[[tool.hatch.envs.hatch-test.matrix]]
-python = ["3.14", "3.13", "3.12", "3.11", "3.10"]
-
 [tool.hatch.envs.pre-commit]
-extra-dependencies = [
-    "pre-commit==4.3.0",
-]
+extra-dependencies = ["pre-commit==4.3.0"]
 post-install-commands = []
+
 [tool.hatch.envs.pre-commit.scripts]
 run = "pre-commit run {args:--all}"
 install = "pre-commit install -f"
 
 [tool.hatch.envs.types]
 template = "hatch-test"
-extra-dependencies = [
-    "mypy==1.18.2",
-]
+extra-dependencies = ["mypy==1.18.2"]
 post-install-commands = []
+
 [tool.hatch.envs.types.scripts]
 check = "mypy {args:asyncirc tests}"
 
@@ -138,11 +135,11 @@ select = ["ALL"]
 [tool.ruff.lint.per-file-ignores]
 "tests/*.py" = [
     "PLR2004", # Allow "magic values" in tests -aspen
-    "S101",    # Allow asserts in tests
-    "SIM201",  # We need to test weird comparison operators
-    "SIM202",  # We need to test weird comparison operstors
-    "SIM300",  # We need to test both forward and reverse comparisons
-    "FBT001",  # Boolean parameters are fine for test cases
+    "S101", # Allow asserts in tests
+    "SIM201", # We need to test weird comparison operators
+    "SIM202", # We need to test weird comparison operstors
+    "SIM300", # We need to test both forward and reverse comparisons
+    "FBT001", # Boolean parameters are fine for test cases
 ]
 
 [tool.ruff.lint.pycodestyle]
@@ -188,6 +185,7 @@ enable_error_code = [
     "truthy-bool",
     "truthy-iterable",
     "ignore-without-code",
+    "deprecated",
 ]
 ignore_missing_imports = true
 
@@ -210,15 +208,6 @@ exclude_lines = [
 [tool.coverage.run]
 branch = true
 relative_files = true
-
-[tool.commitizen]
-name = "cz_conventional_commits"
-tag_format = "v$version"
-version_scheme = "semver2"
-version_provider = "scm"
-update_changelog_on_bump = true
-major_version_zero = true
-annotated_tag = true
 
 [tool.nitpick]
 style = ["gh://TotallyNotRobots/nitpick/lib-style-3.10.toml"]
