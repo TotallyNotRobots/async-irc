@@ -23,7 +23,7 @@ jobs:
     steps:
       - name: log event
         env:
-          data: ${{ github.event }}
+          data: ${{ toJson(github.event) }}
         run: |
           echo "$data"
 
