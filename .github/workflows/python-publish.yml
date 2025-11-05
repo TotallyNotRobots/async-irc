@@ -7,9 +7,6 @@ on:
   pull_request:
     branches: [main]
   release:
-    types:
-      - created
-      - published
 
 env:
   HATCH_VERSION: "1.15.1"
