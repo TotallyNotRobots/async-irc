@@ -40,7 +40,7 @@ version-file = "asyncirc/_version.py"
 
 [tool.hatch.envs.default]
 dependencies = [
-    "coverage[toml]==7.11.1",
+    "coverage[toml]==7.11.3",
     "pytest==8.4.2",
     "pytest-asyncio==1.2.0",
     "pre-commit==4.4.0",
