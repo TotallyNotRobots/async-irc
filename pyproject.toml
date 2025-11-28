@@ -44,7 +44,7 @@ dependencies = [
     "pytest==9.0.1",
     "pytest-asyncio==1.3.0",
     "pre-commit==4.5.0",
-    "mypy==1.18.2",
+    "mypy==1.19.0",
 ]
 post-install-commands = ["hatch run pre-commit:install"]
 
@@ -79,7 +79,7 @@ install = "pre-commit install -f"
 
 [tool.hatch.envs.types]
 template = "hatch-test"
-extra-dependencies = ["mypy==1.18.2"]
+extra-dependencies = ["mypy==1.19.0"]
 post-install-commands = []
 
 [tool.hatch.envs.types.scripts]
