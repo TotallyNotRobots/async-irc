@@ -90,7 +90,7 @@ repos:
         types:
           - python
   - repo: https://github.com/andreoliwa/nitpick
-    rev: 'a1373f03f5a9394c75cc03e5da1b0cb6ff615dbb' # frozen: v0.38.0
+    rev: '3ba97e5d57882cca6ef1eccaae683753c8a26630'  # frozen: v0.38.1
     hooks:
       - id: nitpick
   - repo: https://github.com/PyCQA/autoflake
