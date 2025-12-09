@@ -9,7 +9,7 @@ on:
 env:
   PYTHONUNBUFFERED: "1"
   FORCE_COLOR: "1"
-  HATCH_VERSION: "1.16.1"
+  HATCH_VERSION: "1.16.2"
 
 jobs:
   test:

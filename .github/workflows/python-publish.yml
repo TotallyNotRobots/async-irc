@@ -8,7 +8,7 @@ on:
     branches: [main]
 
 env:
-  HATCH_VERSION: "1.16.1"
+  HATCH_VERSION: "1.16.2"
 
 jobs:
   build:
