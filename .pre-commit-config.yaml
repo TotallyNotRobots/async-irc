@@ -33,11 +33,11 @@ repos:
           - --no-sort-keys
       - id: check-toml
   - repo: https://github.com/bwhmather/ssort
-    rev: 2dd40ba37fdd472ce996668ea415077d756e651b # frozen: 0.15.0
+    rev: fb5ed1dd650d0920820506ea817bfd80942b9510  # frozen: 0.16.0
     hooks:
       - id: ssort
   - repo: https://github.com/psf/black
-    rev: 05f0a8ce1f71fbb36e1e032d3b518c7b945089a2  # frozen: 25.11.0
+    rev: 782e5605c86aab56be6f905da10dcd3e463fd9c2  # frozen: 25.12.0
     hooks:
       - id: black
   - repo: https://github.com/pycqa/isort
