@@ -109,6 +109,10 @@ repos:
           - '4'
           - --inline-comment-spaces
           - '1'
+  - repo: https://github.com/TotallyNotRobots/check-spdx-header
+    rev: '676e6f28a70426914a2e286cbb53696fe2a19381'  # frozen: 0.3.0
+    hooks:
+      - id: fix-spdx-header
 minimum_pre_commit_version: 4.3.0
 default_install_hook_types:
   - pre-commit
