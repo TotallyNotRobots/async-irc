@@ -212,6 +212,12 @@ relative_files = true
 [tool.nitpick]
 style = ["gh://TotallyNotRobots/nitpick/lib-style-3.10.toml"]
 
+[tool.check-spdx-header]
+headers = [
+    "2017-2020 Snoonet",
+    "2020-present linuxdaemon <linuxdaemon.irc@gmail.com>",
+]
+
 [tool.autoflake]
 remove-all-unused-imports = true
 in-place = true

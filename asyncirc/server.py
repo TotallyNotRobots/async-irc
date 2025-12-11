@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2017-2020 Snoonet
+# SPDX-FileCopyrightText: 2020-present linuxdaemon <linuxdaemon.irc@gmail.com>
+#
+# SPDX-License-Identifier: MIT
+
 """Server objects used for different stages in the connect process to store contextual data."""
 
 import asyncio
