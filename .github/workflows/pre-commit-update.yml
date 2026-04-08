@@ -24,7 +24,7 @@ jobs:
           python-version: '3.14'
 
       - name: Install Hatch
-        uses: pypa/hatch@install
+        uses: pypa/hatch@257e27e51a6a5616ed08a39a408a21c35c9931bc # install
         with:
           version: "${{ env.HATCH_VERSION }}"
 
