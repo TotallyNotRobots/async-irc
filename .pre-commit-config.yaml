@@ -33,7 +33,7 @@ repos:
           - --no-sort-keys
       - id: check-toml
   - repo: https://github.com/bwhmather/ssort
-    rev: fb5ed1dd650d0920820506ea817bfd80942b9510  # frozen: 0.16.0
+    rev: 1edc5807f7f55ec843ab040392ea4247d947cda9  # frozen: 0.17.0
     hooks:
       - id: ssort
   - repo: https://github.com/psf/black
@@ -41,7 +41,7 @@ repos:
     hooks:
       - id: black
   - repo: https://github.com/pycqa/isort
-    rev: 7f321d375f31a2f03833bc9a548e8783f2b5c420  # frozen: 9.0.0b1
+    rev: 8d8d49d0f5ded46bb10bb860b0841be14ba42a65  # frozen: 9.0.0b2
     hooks:
       - id: isort
   - repo: https://github.com/pre-commit/pygrep-hooks
@@ -72,7 +72,7 @@ repos:
         additional_dependencies:
           - tomli ; python_version < '3.11'
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: 55d62f82df48e68346132837311d6103617a4e69  # frozen: v4.16.5
+    rev: 1afca4a81ca3e578ba142fe15a0f8a1a94b894ad  # frozen: v4.17.0
     hooks:
       - id: commitizen
   - repo: local
@@ -110,7 +110,7 @@ repos:
           - --inline-comment-spaces
           - '1'
   - repo: https://github.com/TotallyNotRobots/check-spdx-header
-    rev: '07ff863131799b08ae6bd94ac52f3c69aa95f476'  # frozen: 0.3.1
+    rev: '7b32924b95a8a529c388fd5abf41dcca901b42bc'  # frozen: 0.3.2
     hooks:
       - id: fix-spdx-header
 minimum_pre_commit_version: 4.3.0
