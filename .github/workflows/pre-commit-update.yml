@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  HATCH_VERSION: "1.17.1"
+  HATCH_VERSION: "1.18.0"
 
 jobs:
   update-pre-commit-config:
