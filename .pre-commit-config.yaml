@@ -41,7 +41,7 @@ repos:
     hooks:
       - id: black
   - repo: https://github.com/pycqa/isort
-    rev: 8d8d49d0f5ded46bb10bb860b0841be14ba42a65  # frozen: 9.0.0b2
+    rev: 131f4adcd5582bfc53928ab0d740eceb8b506b6c  # frozen: 9.0.1
     hooks:
       - id: isort
   - repo: https://github.com/pre-commit/pygrep-hooks
@@ -72,7 +72,7 @@ repos:
         additional_dependencies:
           - tomli ; python_version < '3.11'
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: 1afca4a81ca3e578ba142fe15a0f8a1a94b894ad  # frozen: v4.17.0
+    rev: 3d7386012109c403d56375314125c20e102e75c0  # frozen: v4.18.0
     hooks:
       - id: commitizen
   - repo: local
@@ -94,7 +94,7 @@ repos:
     hooks:
       - id: nitpick
   - repo: https://github.com/PyCQA/autoflake
-    rev: '2d3853a9f31d97783fb2e181d41cd82a6babd666'  # frozen: v2.3.3
+    rev: '6d9dd2716540ab776f29c7b896cd3052ef4619b2'  # frozen: v2.4.0
     hooks:
       - id: autoflake
   - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
