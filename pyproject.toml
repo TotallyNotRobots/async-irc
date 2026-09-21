@@ -9,7 +9,7 @@ description = "A simple asyncio.Protocol implementation designed for IRC"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
-authors = [{name = "linuxdaemon", email = "linuxdaemon.irc@gmail.com"}]
+authors = [{ name = "linuxdaemon", email = "linuxdaemon.irc@gmail.com" }]
 keywords = ["async-irc", "asyncio", "asyncirc", "irc", "irc-framework"]
 classifiers = [
     "Development Status :: 3 - Alpha",
