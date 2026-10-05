@@ -37,11 +37,11 @@ repos:
     hooks:
       - id: ssort
   - repo: https://github.com/psf/black
-    rev: 87928e6d6761a4a6d22250e1fee5601b3998086e  # frozen: 26.5.1
+    rev: 4f1883b1f15305a0e83a7c87991f46292bf09f85  # frozen: 26.10.0
     hooks:
       - id: black
   - repo: https://github.com/pycqa/isort
-    rev: 131f4adcd5582bfc53928ab0d740eceb8b506b6c  # frozen: 9.0.1
+    rev: 9f905615631c545f5aea2516508109350d1d2f7d  # frozen: 9.0.2
     hooks:
       - id: isort
   - repo: https://github.com/pre-commit/pygrep-hooks
@@ -72,7 +72,7 @@ repos:
         additional_dependencies:
           - tomli ; python_version < '3.11'
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: 3d7386012109c403d56375314125c20e102e75c0  # frozen: v4.18.0
+    rev: 0c19a2b41e5514bc74f36c3eed4de554f989b666  # frozen: v4.19.1
     hooks:
       - id: commitizen
   - repo: local
