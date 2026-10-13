@@ -43,7 +43,7 @@ dependencies = [
     "coverage[toml]==7.16.1",
     "pytest==9.1.1",
     "pytest-asyncio==1.4.0",
-    "pre-commit==4.6.2",
+    "pre-commit==4.7.0",
     "mypy==2.3.1",
 ]
 post-install-commands = ["hatch run pre-commit:install"]
@@ -70,7 +70,7 @@ post-install-commands = []
 post-install-commands = []
 
 [tool.hatch.envs.pre-commit]
-extra-dependencies = ["pre-commit==4.6.2"]
+extra-dependencies = ["pre-commit==4.7.0"]
 post-install-commands = []
 
 [tool.hatch.envs.pre-commit.scripts]
