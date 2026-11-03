@@ -23,9 +23,7 @@ repos:
         args:
           - --fix=lf
       - id: check-json
-        exclude: ^\.(vscode|devcontainer)/
       - id: pretty-format-json
-        exclude: ^\.(vscode|devcontainer)/
         args:
           - --indent
           - '4'
