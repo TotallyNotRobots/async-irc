@@ -21,7 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
-dependencies = ["py-irclib>=0.8.0", "typing_extensions"]
+dependencies = ["py-irclib>=0.8.0", "typing_extensions>=4.5.0"]
 
 [project.urls]
 Homepage = "https://github.com/TotallyNotRobots/async-irc"
@@ -43,8 +43,8 @@ dependencies = [
     "coverage[toml]==7.16.1",
     "pytest==9.1.1",
     "pytest-asyncio==1.4.0",
-    "pre-commit==4.6.2",
-    "mypy==2.3.1",
+    "pre-commit==4.7.0",
+    "basedpyright==1.40.0",
 ]
 post-install-commands = ["hatch run pre-commit:install"]
 
@@ -70,31 +70,20 @@ post-install-commands = []
 post-install-commands = []
 
 [tool.hatch.envs.pre-commit]
-extra-dependencies = ["pre-commit==4.6.2"]
+extra-dependencies = ["pre-commit==4.7.0"]
 post-install-commands = []
 
 [tool.hatch.envs.pre-commit.scripts]
-run = "pre-commit run {args:--all}"
-install = "pre-commit install -f"
+run = ["pre-commit run {args:--all}"]
+install = ["pre-commit install {args:-f}"]
+update = ["pre-commit autoupdate --freeze"]
 
 [tool.hatch.envs.types]
-template = "hatch-test"
-extra-dependencies = ["mypy==2.3.1"]
+extra-dependencies = ["basedpyright==1.40.0"]
 post-install-commands = []
 
 [tool.hatch.envs.types.scripts]
-check = "mypy {args:asyncirc tests}"
-
-[tool.isort]
-profile = "black"
-line_length = 80
-known_first_party = ["asyncirc", "tests"]
-float_to_top = true
-
-[tool.black]
-line-length = 80
-target-version = ["py310"]
-include = '\.pyi?$'
+check = "basedpyright {args:asyncirc tests}"
 
 [tool.ruff]
 line-length = 80
@@ -106,14 +95,11 @@ line-ending = "lf"
 skip-magic-trailing-comma = true
 
 [tool.ruff.lint]
-ignore-init-module-imports = false
 extend-safe-fixes = [
     "EM101",
     "EM102",
     "EM103",
     "FLY002",
-    "TCH001",
-    "TCH002",
     "TRY400",
     "SIM117",
     "SIM108",
@@ -121,15 +107,7 @@ extend-safe-fixes = [
     "D415",
     "D200",
 ]
-ignore = [
-    "TRY003", # TODO(aspen): Switch to custom exceptions
-    "ANN101", # Due to be deprecated in ruff
-    "ANN102", # Due to be deprecated in ruff
-    "COM812", # Conflicts with formatter
-    "ISC001", # Conflicts with formatter
-    "EXE002", # pre-commit does it better, works with SMB shares
-    "FA100",
-]
+ignore = ["TRY003", "COM812", "ISC001", "EXE002", "FA100", "CPY001"]
 select = ["ALL"]
 
 [tool.ruff.lint.per-file-ignores]
@@ -157,42 +135,11 @@ transform-joins = true
 transform-concats = true
 line-length = 120
 
-[tool.mypy]
-namespace_packages = true
-python_version = "3.10"
-warn_unused_configs = true
-strict = true
-strict_optional = true
-check_untyped_defs = true
-show_error_codes = true
-warn_unused_ignores = true
-no_implicit_reexport = true
-warn_redundant_casts = true
-strict_equality = true
-disallow_any_generics = true
-disallow_untyped_calls = true
-disallow_untyped_defs = true
-disallow_untyped_decorators = true
-extra_checks = true
-warn_unreachable = true
-warn_return_any = true
-warn_no_return = true
-incremental = false
-enable_error_code = [
-    "redundant-self",
-    "redundant-expr",
-    "possibly-undefined",
-    "truthy-bool",
-    "truthy-iterable",
-    "ignore-without-code",
-    "deprecated",
-]
-ignore_missing_imports = true
-
-[tool.pytest.ini_options]
-minversion = "8.0"
+[tool.pytest]
+minversion = "9.0"
 testpaths = ["tests"]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 filterwarnings = ["error"]
 addopts = ["--doctest-modules"]
 
@@ -210,7 +157,10 @@ branch = true
 relative_files = true
 
 [tool.nitpick]
-style = ["gh://TotallyNotRobots/nitpick/lib-style-3.10.toml"]
+style = [
+    "gh://TotallyNotRobots/nitpick/lib-style-3.10.toml",
+    "gh://TotallyNotRobots/nitpick/styles/hatch/common.toml",
+]
 
 [tool.check-spdx-header]
 headers = [
@@ -221,3 +171,10 @@ headers = [
 [tool.autoflake]
 remove-all-unused-imports = true
 in-place = true
+
+[tool.basedpyright]
+analyzeUnannotatedFunctions = true
+reportUnusedCallResult = "none"
+reportImplicitStringConcatenation = "none"
+reportImportCycles = "none"
+pythonVersion = "3.10"

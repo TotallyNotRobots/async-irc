@@ -6,12 +6,11 @@
     "python.testing.pytestEnabled": true,
     "python.analysis.enablePytestSupport": true,
     "[python]": {
-        "diffEditor.ignoreTrimWhitespace": false,
-        "editor.formatOnType": true,
-        "editor.wordBasedSuggestions": "off",
-        "editor.defaultFormatter": "ms-python.black-formatter"
+        "editor.defaultFormatter": "charliermarsh.ruff"
     },
     "python.analysis.diagnosticMode": "workspace",
     "autoDocstringPy.docstringFormat": "google-notypes",
-    "autoDocstringPy.startOnNewLine": true
+    "autoDocstringPy.startOnNewLine": true,
+    "python-envs.defaultEnvManager": "pypa.hatch:hatch",
+    "python-envs.defaultPackageManager": "pypa.hatch:hatch"
 }

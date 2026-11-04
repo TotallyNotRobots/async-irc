@@ -13,6 +13,7 @@ from ssl import SSLContext
 from typing import Any, TypeVar
 
 from irclib.parser import Message
+from typing_extensions import override
 
 from asyncirc.protocol import IrcProtocol, SASLMechanism
 from asyncirc.server import BaseServer
@@ -25,7 +26,7 @@ class MockTransport(asyncio.Transport):
         self,
         server: "MockServer",
         protocol: asyncio.BaseProtocol,
-        extra: Mapping[str, Any] | None = None,
+        extra: Mapping[str, Any] | None = None,  # pyright: ignore[reportExplicitAny]
         sasl_cap_mechs: list[str] | None = None,
     ) -> None:
         """Create mock transport for testing.
@@ -33,28 +34,28 @@ class MockTransport(asyncio.Transport):
         Args:
             server: Server configuration.
             protocol: protocol implementation.
-            loop: Asyncio loop to use.
-            ssl: SSLContext to use.
             extra: Extra transport data. Defaults to None.
+            sasl_cap_mechs: SASL mechanisms to enable. Defaults to None.
         """
         super().__init__(extra)
-        self._server = server
+        self._server: MockServer = server
         if not isinstance(protocol, IrcProtocol):  # pragma: no cover
             msg = f"Protocol is wrong type: {type(protocol)}"
             raise TypeError(msg)
 
-        self._protocol = protocol
-        self._write_buffer = b""
+        self._protocol: IrcProtocol = protocol
+        self._write_buffer: bytes = b""
 
-        self._received_user = False
-        self._received_cap_ls = False
-        self._received_nick = False
-        self._received_cap_end = False
-        self._did_ping = False
-        self._registered = False
-        self._sasl_cap_mechs = sasl_cap_mechs
+        self._received_user: bool = False
+        self._received_cap_ls: bool = False
+        self._received_nick: bool = False
+        self._received_cap_end: bool = False
+        self._did_ping: bool = False
+        self._registered: bool = False
+        self._sasl_cap_mechs: list[str] | None = sasl_cap_mechs
 
-    def write(self, data: bytes | bytearray | memoryview) -> None:
+    @override
+    def write(self, data: bytes | bytearray | memoryview) -> None:  # noqa: C901, PLR0912
         """'Write data to the server.
 
         This just handles the incoming data and sends responses directly to the Protocol.
@@ -120,6 +121,7 @@ class MockTransport(asyncio.Transport):
                         Message.parse(":irc.example.com PING foobar")
                     )
 
+    @override
     def get_protocol(self) -> IrcProtocol:
         """Get current protocol."""
         return self._protocol
@@ -147,14 +149,15 @@ class MockServer(BaseServer):
             is_ssl: Whether to use TLS. Defaults to False.
             ssl_ctx: SSLContext to use. Defaults to None.
             certpath: Path to client cert to use. Defaults to None.
+            sasl_cap_mechs: SASL mechanisms to enable. Defaults to None.
         """
         super().__init__(
             password=password, is_ssl=is_ssl, ssl_ctx=ssl_ctx, certpath=certpath
         )
         self.lines: list[tuple[str, str]] = []
-        self.in_buffer = b""
+        self.in_buffer: bytes = b""
         self.transport: MockTransport | None = None
-        self.sasl_cap_mechs = sasl_cap_mechs
+        self.sasl_cap_mechs: list[str] | None = sasl_cap_mechs
 
     def send_line(self, msg: Message) -> None:
         """Send line back to client.
@@ -166,6 +169,7 @@ class MockServer(BaseServer):
         self.lines.append(("out", str(msg)))
         self.transport.get_protocol().data_received(str(msg).encode() + b"\r\n")
 
+    @override
     async def connect(
         self,
         protocol_factory: Callable[[], _ProtoT],
@@ -189,6 +193,10 @@ class MockServer(BaseServer):
         )
         proto.connection_made(self.transport)
         return self.transport, proto
+
+    @override
+    def __str__(self) -> str:
+        return "MockServer"
 
 
 async def test_sasl() -> None:
@@ -219,80 +227,26 @@ async def test_sasl() -> None:
         await proto.quit_future
 
     assert server.lines == [
-        (
-            "in",
-            "CAP LS 302",
-        ),
-        (
-            "out",
-            ":irc.example.com CAP * LS :foo sasl bar",
-        ),
-        (
-            "in",
-            "NICK nick",
-        ),
-        (
-            "in",
-            "USER nick 0 * :nick",
-        ),
-        (
-            "in",
-            "CAP REQ :foo",
-        ),
-        (
-            "out",
-            ":irc.example.com CAP * ACK :foo",
-        ),
-        (
-            "in",
-            "CAP REQ :sasl",
-        ),
-        (
-            "out",
-            ":irc.example.com CAP * ACK :sasl",
-        ),
-        (
-            "in",
-            "CAP REQ :bar",
-        ),
-        (
-            "out",
-            ":irc.example.com CAP * ACK :bar",
-        ),
-        (
-            "in",
-            "AUTHENTICATE PLAIN",
-        ),
-        (
-            "out",
-            ":irc.example.com AUTHENTICATE +",
-        ),
-        (
-            "in",
-            "AUTHENTICATE Zm9vAGZvbwBiYXI=",
-        ),
-        (
-            "out",
-            ":irc.example.com 903",
-        ),
-        (
-            "in",
-            "CAP END",
-        ),
-        (
-            "out",
-            ":irc.example.com PING foobar",
-        ),
+        ("in", "CAP LS 302"),
+        ("out", ":irc.example.com CAP * LS :foo sasl bar"),
+        ("in", "NICK nick"),
+        ("in", "USER nick 0 * :nick"),
+        ("in", "CAP REQ :foo"),
+        ("out", ":irc.example.com CAP * ACK :foo"),
+        ("in", "CAP REQ :sasl"),
+        ("out", ":irc.example.com CAP * ACK :sasl"),
+        ("in", "CAP REQ :bar"),
+        ("out", ":irc.example.com CAP * ACK :bar"),
+        ("in", "AUTHENTICATE PLAIN"),
+        ("out", ":irc.example.com AUTHENTICATE +"),
+        ("in", "AUTHENTICATE Zm9vAGZvbwBiYXI="),
+        ("out", ":irc.example.com 903"),
+        ("in", "CAP END"),
+        ("out", ":irc.example.com PING foobar"),
         ("in", "PONG foobar"),
-        (
-            "out",
-            ":irc.example.com 001",
-        ),
+        ("out", ":irc.example.com 001"),
         ("in", "PRIVMSG #foo :bar"),
-        (
-            "in",
-            "QUIT",
-        ),
+        ("in", "QUIT"),
     ]
 
 
@@ -324,80 +278,26 @@ async def test_sasl_multiple_mechs() -> None:
         await proto.quit_future
 
     assert server.lines == [
-        (
-            "in",
-            "CAP LS 302",
-        ),
-        (
-            "out",
-            ":irc.example.com CAP * LS :foo sasl=PLAIN,EXTERNAL bar",
-        ),
-        (
-            "in",
-            "NICK nick",
-        ),
-        (
-            "in",
-            "USER nick 0 * :nick",
-        ),
-        (
-            "in",
-            "CAP REQ :foo",
-        ),
-        (
-            "out",
-            ":irc.example.com CAP * ACK :foo",
-        ),
-        (
-            "in",
-            "CAP REQ :sasl",
-        ),
-        (
-            "out",
-            ":irc.example.com CAP * ACK :sasl",
-        ),
-        (
-            "in",
-            "CAP REQ :bar",
-        ),
-        (
-            "out",
-            ":irc.example.com CAP * ACK :bar",
-        ),
-        (
-            "in",
-            "AUTHENTICATE PLAIN",
-        ),
-        (
-            "out",
-            ":irc.example.com AUTHENTICATE +",
-        ),
-        (
-            "in",
-            "AUTHENTICATE Zm9vAGZvbwBiYXI=",
-        ),
-        (
-            "out",
-            ":irc.example.com 903",
-        ),
-        (
-            "in",
-            "CAP END",
-        ),
-        (
-            "out",
-            ":irc.example.com PING foobar",
-        ),
+        ("in", "CAP LS 302"),
+        ("out", ":irc.example.com CAP * LS :foo sasl=PLAIN,EXTERNAL bar"),
+        ("in", "NICK nick"),
+        ("in", "USER nick 0 * :nick"),
+        ("in", "CAP REQ :foo"),
+        ("out", ":irc.example.com CAP * ACK :foo"),
+        ("in", "CAP REQ :sasl"),
+        ("out", ":irc.example.com CAP * ACK :sasl"),
+        ("in", "CAP REQ :bar"),
+        ("out", ":irc.example.com CAP * ACK :bar"),
+        ("in", "AUTHENTICATE PLAIN"),
+        ("out", ":irc.example.com AUTHENTICATE +"),
+        ("in", "AUTHENTICATE Zm9vAGZvbwBiYXI="),
+        ("out", ":irc.example.com 903"),
+        ("in", "CAP END"),
+        ("out", ":irc.example.com PING foobar"),
         ("in", "PONG foobar"),
-        (
-            "out",
-            ":irc.example.com 001",
-        ),
+        ("out", ":irc.example.com 001"),
         ("in", "PRIVMSG #foo :bar"),
-        (
-            "in",
-            "QUIT",
-        ),
+        ("in", "QUIT"),
     ]
 
 
@@ -429,64 +329,22 @@ async def test_sasl_unsupported_mechs() -> None:
         await proto.quit_future
 
     assert server.lines == [
-        (
-            "in",
-            "CAP LS 302",
-        ),
-        (
-            "out",
-            ":irc.example.com CAP * LS :foo sasl=EXTERNAL bar",
-        ),
-        (
-            "in",
-            "NICK nick",
-        ),
-        (
-            "in",
-            "USER nick 0 * :nick",
-        ),
-        (
-            "in",
-            "CAP REQ :foo",
-        ),
-        (
-            "out",
-            ":irc.example.com CAP * ACK :foo",
-        ),
-        (
-            "in",
-            "CAP REQ :sasl",
-        ),
-        (
-            "out",
-            ":irc.example.com CAP * ACK :sasl",
-        ),
-        (
-            "in",
-            "CAP REQ :bar",
-        ),
-        (
-            "out",
-            ":irc.example.com CAP * ACK :bar",
-        ),
-        (
-            "in",
-            "CAP END",
-        ),
-        (
-            "out",
-            ":irc.example.com PING foobar",
-        ),
+        ("in", "CAP LS 302"),
+        ("out", ":irc.example.com CAP * LS :foo sasl=EXTERNAL bar"),
+        ("in", "NICK nick"),
+        ("in", "USER nick 0 * :nick"),
+        ("in", "CAP REQ :foo"),
+        ("out", ":irc.example.com CAP * ACK :foo"),
+        ("in", "CAP REQ :sasl"),
+        ("out", ":irc.example.com CAP * ACK :sasl"),
+        ("in", "CAP REQ :bar"),
+        ("out", ":irc.example.com CAP * ACK :bar"),
+        ("in", "CAP END"),
+        ("out", ":irc.example.com PING foobar"),
         ("in", "PONG foobar"),
-        (
-            "out",
-            ":irc.example.com 001",
-        ),
+        ("out", ":irc.example.com 001"),
         ("in", "PRIVMSG #foo :bar"),
-        (
-            "in",
-            "QUIT",
-        ),
+        ("in", "QUIT"),
     ]
 
 
@@ -518,78 +376,24 @@ async def test_connect_ssl() -> None:
         await proto.quit_future
 
     assert server.lines == [
-        (
-            "in",
-            "CAP LS 302",
-        ),
-        (
-            "out",
-            ":irc.example.com CAP * LS :foo sasl bar",
-        ),
-        (
-            "in",
-            "NICK nick",
-        ),
-        (
-            "in",
-            "USER nick 0 * :nick",
-        ),
-        (
-            "in",
-            "CAP REQ :foo",
-        ),
-        (
-            "out",
-            ":irc.example.com CAP * ACK :foo",
-        ),
-        (
-            "in",
-            "CAP REQ :sasl",
-        ),
-        (
-            "out",
-            ":irc.example.com CAP * ACK :sasl",
-        ),
-        (
-            "in",
-            "CAP REQ :bar",
-        ),
-        (
-            "out",
-            ":irc.example.com CAP * ACK :bar",
-        ),
-        (
-            "in",
-            "AUTHENTICATE PLAIN",
-        ),
-        (
-            "out",
-            ":irc.example.com AUTHENTICATE +",
-        ),
-        (
-            "in",
-            "AUTHENTICATE Zm9vAGZvbwBiYXI=",
-        ),
-        (
-            "out",
-            ":irc.example.com 903",
-        ),
-        (
-            "in",
-            "CAP END",
-        ),
-        (
-            "out",
-            ":irc.example.com PING foobar",
-        ),
+        ("in", "CAP LS 302"),
+        ("out", ":irc.example.com CAP * LS :foo sasl bar"),
+        ("in", "NICK nick"),
+        ("in", "USER nick 0 * :nick"),
+        ("in", "CAP REQ :foo"),
+        ("out", ":irc.example.com CAP * ACK :foo"),
+        ("in", "CAP REQ :sasl"),
+        ("out", ":irc.example.com CAP * ACK :sasl"),
+        ("in", "CAP REQ :bar"),
+        ("out", ":irc.example.com CAP * ACK :bar"),
+        ("in", "AUTHENTICATE PLAIN"),
+        ("out", ":irc.example.com AUTHENTICATE +"),
+        ("in", "AUTHENTICATE Zm9vAGZvbwBiYXI="),
+        ("out", ":irc.example.com 903"),
+        ("in", "CAP END"),
+        ("out", ":irc.example.com PING foobar"),
         ("in", "PONG foobar"),
-        (
-            "out",
-            ":irc.example.com 001",
-        ),
+        ("out", ":irc.example.com 001"),
         ("in", "PRIVMSG #foo :bar"),
-        (
-            "in",
-            "QUIT",
-        ),
+        ("in", "QUIT"),
     ]

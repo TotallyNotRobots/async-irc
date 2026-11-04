@@ -8,24 +8,27 @@
 import asyncio
 import ssl
 import warnings
+from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, TypeVar
+
+from typing_extensions import override
 
 if TYPE_CHECKING:
     from irclib.parser import Cap
 
 __all__ = (
     "BaseServer",
-    "Server",
     "BasicIPServer",
     "BasicUNIXServer",
     "ConnectedServer",
+    "Server",
 )
 
 _ProtoT = TypeVar("_ProtoT", bound=asyncio.Protocol)
 
 
-class BaseServer:
+class BaseServer(ABC):
     """Abstract server specification to store connect information and session data."""
 
     def __init__(
@@ -55,13 +58,14 @@ class BaseServer:
         else:
             self.ssl_ctx = None
 
-        self.password = password
+        self.password: str | None = password
 
     @property
     def is_ssl(self) -> bool:
         """Whether this connection uses TLS."""
         return self.ssl_ctx is not None
 
+    @abstractmethod
     async def connect(
         self,
         protocol_factory: Callable[[], _ProtoT],
@@ -101,6 +105,8 @@ class BaseServer:
         """
         return await self.connect(protocol_factory, loop=loop, ssl=self.ssl_ctx)
 
+    @override
+    @abstractmethod
     def __str__(self) -> str:
         """Describe server configuration."""
         raise NotImplementedError
@@ -109,7 +115,7 @@ class BaseServer:
 class BasicIPServer(BaseServer):
     """A simple implementation for connecting to a normal TCP server."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         *,
         host: str,
@@ -133,9 +139,10 @@ class BasicIPServer(BaseServer):
             password=password, is_ssl=is_ssl, ssl_ctx=ssl_ctx, certpath=certpath
         )
 
-        self.host = host
-        self.port = port
+        self.host: str = host
+        self.port: int = port
 
+    @override
     async def connect(
         self,
         protocol_factory: Callable[[], _ProtoT],
@@ -160,6 +167,7 @@ class BasicIPServer(BaseServer):
             protocol_factory, self.host, self.port, ssl=ssl
         )
 
+    @override
     def __str__(self) -> str:
         """Describe TCP server configuration."""
         if self.is_ssl:
@@ -193,8 +201,9 @@ class BasicUNIXServer(BaseServer):
             is_ssl=is_ssl, password=password, ssl_ctx=ssl_ctx, certpath=certpath
         )
 
-        self.path = path
+        self.path: str = path
 
+    @override
     async def connect(
         self,
         protocol_factory: Callable[[], _ProtoT],
@@ -219,6 +228,7 @@ class BasicUNIXServer(BaseServer):
             protocol_factory, self.path, ssl=ssl
         )
 
+    @override
     def __str__(self) -> str:
         """Describe UNIX socket connection."""
         if self.is_ssl:
@@ -234,7 +244,7 @@ class Server(BasicIPServer):
         self,
         host: str,
         port: int,
-        is_ssl: bool = False,
+        is_ssl: bool = False,  # noqa: FBT001, FBT002
         password: str | None = None,
     ) -> None:
         """Create basic server configuration.
@@ -271,10 +281,10 @@ class ConnectedServer:
         Args:
             server: Server connection configuration
         """
-        self.connection = server
-        self.is_ssl = server.is_ssl
-        self.password = server.password
+        self.connection: BaseServer = server
+        self.is_ssl: bool = server.is_ssl
+        self.password: str | None = server.password
         self.isupport_tokens: dict[str, str | None] = {}
         self.caps: dict[str, tuple[Cap, bool | None]] = {}
         self.server_name: str | None = None
-        self.data: dict[str, Any] = {}
+        self.data: dict[str, Any] = {}  # pyright: ignore[reportExplicitAny]

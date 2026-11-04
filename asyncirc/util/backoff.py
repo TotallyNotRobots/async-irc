@@ -8,6 +8,9 @@
 import asyncio
 import random
 from collections.abc import Callable
+from random import Random
+
+from typing_extensions import Self
 
 __all__ = ("AsyncDelayer",)
 
@@ -24,8 +27,8 @@ class AsyncDelayer:
     ...         async with delayer:
     ...             # Attempt connection
     ...
-    >>> loop = asyncio.get_event_loop() # doctest: +SKIP
-    >>> loop.run_until_complete(connect()) # doctest: +SKIP
+    >>> loop = asyncio.get_event_loop()  # doctest: +SKIP
+    >>> loop.run_until_complete(connect())  # doctest: +SKIP
     """
 
     def __init__(self, base: int = 1, *, integral: bool = False) -> None:
@@ -35,11 +38,11 @@ class AsyncDelayer:
             base: Base number to use in calculation. Defaults to 1.
             integral: Whether to use whole-second times or not. Defaults to False.
         """
-        self._base = base
-        self._integral = integral
-        self._max = 10
-        self._exp = 0
-        self._rand = random.Random()
+        self._base: int = base
+        self._integral: bool = integral
+        self._max: int = 10
+        self._exp: int = 0
+        self._rand: Random = random.Random()  # noqa: S311
         self._rand.seed()
 
     @property
@@ -50,13 +53,13 @@ class AsyncDelayer:
 
         return self._rand.uniform
 
-    async def __aenter__(self) -> "AsyncDelayer":
+    async def __aenter__(self) -> Self:
         """Enter delayed context.
 
         Sleeps for a random time according to the algorithm.
         """
         self._exp = min(self._exp + 1, self._max)
-        wait = self.randfunc(0, self._base * (2**self._exp))
+        wait = self.randfunc(0, self._base * (2**self._exp))  # pyright: ignore[reportAny]
         await asyncio.sleep(wait)
         return self
 

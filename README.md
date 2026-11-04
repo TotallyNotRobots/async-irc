@@ -10,8 +10,7 @@ An implementation of asyncio.Protocol for IRC
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/async-irc.svg)](https://pypi.org/project/async-irc/)
 
 [![linting - Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![types - Mypy](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy)
-
+[![basedpyright - checked](https://img.shields.io/endpoint?url=https://docs.basedpyright.com/latest/badge.json)](https://docs.basedpyright.com)
 [![License - MIT](https://img.shields.io/badge/license-MIT-9400d3.svg)](https://spdx.org/licenses/)
 
 ## Using the library
@@ -31,15 +30,18 @@ servers = [
     Server("irc.example.com", 6667),
 ]
 
+
 async def log(conn, message):
     print(message)
 
+
 async def main():
     conn = IrcProtocol(servers, "BotNick", loop=loop)
-    conn.register_cap('userhost-in-names')
-    conn.register('*', log)
+    conn.register_cap("userhost-in-names")
+    conn.register("*", log)
     await conn.connect()
     await asyncio.sleep(24 * 60 * 60)
+
 
 try:
     loop.run_until_complete(main())

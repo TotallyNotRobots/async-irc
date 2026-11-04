@@ -2,10 +2,14 @@
     "name": "Python 3",
     "dockerFile": "./Dockerfile",
     "context": "..",
+    "mounts": [
+        "source=${localEnv:HOME}/.config/gh,target=/home/vscode/.config/gh,type=bind,consistency=cached,bind-create-src"
+    ],
     "features": {
         "ghcr.io/devcontainers-extra/features/zsh-plugins": {
             "omzPlugins": "https://github.com/zsh-users/zsh-autosuggestions"
-        }
+        },
+        "ghcr.io/devcontainers/features/github-cli:1": {}
     },
     "postCreateCommand": "hatch run python --version",
     "customizations": {
@@ -18,14 +22,13 @@
                 "GitHub.vscode-pull-request-github",
                 "github.vscode-github-actions",
                 "redhat.vscode-yaml",
-                "ms-python.black-formatter",
-                "ms-python.isort",
-                "ms-azuretools.vscode-docker",
-                "ms-python.mypy-type-checker",
-                "sunipkm.autodocstringpy"
+                "sunipkm.autodocstringpy",
+                "charliermarsh.ruff",
+                "pypa.hatch",
+                "detachhead.basedpyright"
             ],
             "settings": {
-                "python.defaultInterpreterPath": "~/.virtualenvs/async-irc/bin/python",
+                "python.defaultInterpreterPath": "~/.virtualenvs/polymatch/bin/python",
                 "python.testing.pytestArgs": [
                     "--no-cov"
                 ],
@@ -34,10 +37,7 @@
                         "path": "/usr/bin/zsh"
                     }
                 },
-                "terminal.integrated.defaultProfile.linux": "zsh",
-                "[python]": {
-                    "editor.defaultFormatter": "ms-python.black-formatter"
-                }
+                "terminal.integrated.defaultProfile.linux": "zsh"
             }
         }
     }

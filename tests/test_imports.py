@@ -8,7 +8,7 @@
 
 async def test_imports() -> None:
     """Test basic init of IrcProtocol."""
-    from asyncirc.protocol import IrcProtocol
+    from asyncirc.protocol import IrcProtocol  # noqa: PLC0415
 
     with IrcProtocol([], "") as proto:
         assert not proto.connected

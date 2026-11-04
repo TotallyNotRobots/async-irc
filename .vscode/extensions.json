@@ -7,10 +7,9 @@
         "GitHub.vscode-pull-request-github",
         "github.vscode-github-actions",
         "redhat.vscode-yaml",
-        "ms-python.black-formatter",
-        "ms-python.isort",
-        "ms-azuretools.vscode-docker",
-        "ms-python.mypy-type-checker",
-        "sunipkm.autodocstringpy"
+        "sunipkm.autodocstringpy",
+        "charliermarsh.ruff",
+        "pypa.hatch",
+        "detachhead.basedpyright"
     ]
 }
