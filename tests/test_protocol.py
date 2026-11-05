@@ -195,7 +195,7 @@ class MockServer(BaseServer):
         return self.transport, proto
 
     @override
-    def __str__(self) -> str:
+    def __str__(self) -> str:  # pragma: no cover
         return "MockServer"
 
 
