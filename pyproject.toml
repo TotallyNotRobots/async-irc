@@ -44,7 +44,7 @@ dependencies = [
     "pytest==9.2.0",
     "pytest-asyncio==1.4.0",
     "pre-commit==4.7.0",
-    "basedpyright==1.40.0",
+    "basedpyright==1.40.2",
 ]
 post-install-commands = ["hatch run pre-commit:install"]
 
@@ -79,7 +79,7 @@ install = ["pre-commit install {args:-f}"]
 update = ["pre-commit autoupdate --freeze"]
 
 [tool.hatch.envs.types]
-extra-dependencies = ["basedpyright==1.40.0"]
+extra-dependencies = ["basedpyright==1.40.2"]
 post-install-commands = []
 
 [tool.hatch.envs.types.scripts]
