@@ -1,16 +1,31 @@
 {
-    "python.testing.pytestArgs": [
-        "."
-    ],
-    "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true,
-    "python.analysis.enablePytestSupport": true,
-    "[python]": {
-        "editor.defaultFormatter": "charliermarsh.ruff"
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  },
+  "autoDocstringPy": {
+    "docstringFormat": "google-notypes",
+    "startOnNewLine": true
+  },
+  "basedpyright": {
+    "analysis": {
+      "baselineMode": "discard"
+    }
+  },
+  "python": {
+    "analysis": {
+      "diagnosticMode": "workspace",
+      "enablePytestSupport": true
     },
-    "python.analysis.diagnosticMode": "workspace",
-    "autoDocstringPy.docstringFormat": "google-notypes",
-    "autoDocstringPy.startOnNewLine": true,
-    "python-envs.defaultEnvManager": "pypa.hatch:hatch",
-    "python-envs.defaultPackageManager": "pypa.hatch:hatch"
+    "testing": {
+      "pytestArgs": [
+        "."
+      ],
+      "pytestEnabled": true,
+      "unittestEnabled": false
+    }
+  },
+  "python-envs": {
+    "defaultEnvManager": "pypa.hatch:hatch",
+    "defaultPackageManager": "pypa.hatch:hatch"
+  }
 }
